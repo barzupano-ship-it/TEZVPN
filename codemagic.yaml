@@ -7,8 +7,6 @@ workflows:
     environment:
       android_signing:
         - tezv_android
-      groups:
-        - google_play
       flutter: stable
     scripts:
       - name: Flutter packages
@@ -17,11 +15,6 @@ workflows:
         script: flutter build appbundle --release
     artifacts:
       - flutter/build/app/outputs/bundle/release/*.aab
-    publishing:
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        submit_as_draft: true
 
   tezv-ios:
     name: TEZVPN iOS
