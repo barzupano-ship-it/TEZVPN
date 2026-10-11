@@ -11,10 +11,13 @@ workflows:
     scripts:
       - name: Flutter packages
         script: flutter pub get
-      - name: Android App Bundle
-        script: flutter build appbundle --release
+      - name: Android packages
+        script: |
+          flutter build appbundle --release
+          flutter build apk --release
     artifacts:
       - flutter/build/app/outputs/bundle/release/*.aab
+      - flutter/build/app/outputs/flutter-apk/*.apk
 
   tezv-ios:
     name: TEZVPN iOS
