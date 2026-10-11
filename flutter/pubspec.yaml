@@ -1,0 +1,26 @@
+name: tezvpn
+description: TEZVPN — магазин и AmneziaWG в одном приложении для Google Play и App Store.
+publish_to: "none"
+version: 1.0.5+6
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  shared_preferences: ^2.3.2
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.1
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand.json

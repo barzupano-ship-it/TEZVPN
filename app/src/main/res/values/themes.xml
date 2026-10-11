@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TEZVPN" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/tez_navy</item>
+        <item name="android:navigationBarColor">@color/tez_navy</item>
+        <item name="android:windowBackground">@color/tez_navy</item>
+    </style>
+</resources>

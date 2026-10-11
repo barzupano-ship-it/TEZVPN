@@ -1,0 +1,415 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B001 /* TEZVPNApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F001; };
+		B002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F002; };
+		B003 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F003; };
+		B004 /* ShopApi.swift in Sources */ = {isa = PBXBuildFile; fileRef = F004; };
+		B005 /* ShopStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F005; };
+		B006 /* VpnManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F006; };
+		B007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F007; };
+		B010 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F010; };
+		B011 /* TunnelConfiguration+WgQuick.swift in Sources */ = {isa = PBXBuildFile; fileRef = F011; };
+		B020 /* TEZVPNTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F020; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B030 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = P001; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = P000;
+			proxyType = 1;
+			remoteGlobalIDString = T002;
+			remoteInfo = TEZVPNTunnel;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B020 /* TEZVPNTunnel.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F001 /* TEZVPNApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TEZVPNApp.swift; sourceTree = "<group>"; };
+		F002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F003 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		F004 /* ShopApi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopApi.swift; sourceTree = "<group>"; };
+		F005 /* ShopStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopStore.swift; sourceTree = "<group>"; };
+		F006 /* VpnManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VpnManager.swift; sourceTree = "<group>"; };
+		F007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F009 /* TEZVPN.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TEZVPN.entitlements; sourceTree = "<group>"; };
+		F010 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
+		F011 /* TunnelConfiguration+WgQuick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TunnelConfiguration+WgQuick.swift"; sourceTree = "<group>"; };
+		F012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F013 /* TEZVPNTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TEZVPNTunnel.entitlements; sourceTree = "<group>"; };
+		F019 /* TEZVPN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TEZVPN.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F020 /* TEZVPNTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TEZVPNTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B030 /* WireGuardKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		G000 = {
+			isa = PBXGroup;
+			children = (
+				G001 /* TEZVPN */,
+				G002 /* TEZVPNTunnel */,
+				G003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		G001 /* TEZVPN */ = {
+			isa = PBXGroup;
+			children = (
+				F001 /* TEZVPNApp.swift */,
+				F002 /* ContentView.swift */,
+				F003 /* Models.swift */,
+				F004 /* ShopApi.swift */,
+				F005 /* ShopStore.swift */,
+				F006 /* VpnManager.swift */,
+				F007 /* Assets.xcassets */,
+				F008 /* Info.plist */,
+				F009 /* TEZVPN.entitlements */,
+			);
+			path = TEZVPN;
+			sourceTree = "<group>";
+		};
+		G002 /* TEZVPNTunnel */ = {
+			isa = PBXGroup;
+			children = (
+				F010 /* PacketTunnelProvider.swift */,
+				F011 /* TunnelConfiguration+WgQuick.swift */,
+				F012 /* Info.plist */,
+				F013 /* TEZVPNTunnel.entitlements */,
+			);
+			path = TEZVPNTunnel;
+			sourceTree = "<group>";
+		};
+		G003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F019 /* TEZVPN.app */,
+				F020 /* TEZVPNTunnel.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T001 /* TEZVPN */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = L001;
+			buildPhases = (
+				S001 /* Sources */,
+				E001 /* Frameworks */,
+				R001 /* Resources */,
+				D001 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				Y001 /* PBXTargetDependency */,
+			);
+			name = TEZVPN;
+			productName = TEZVPN;
+			productReference = F019;
+			productType = "com.apple.product-type.application";
+		};
+		T002 /* TEZVPNTunnel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = L002;
+			buildPhases = (
+				S002 /* Sources */,
+				E002 /* Frameworks */,
+				R002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TEZVPNTunnel;
+			packageProductDependencies = (
+				P001 /* WireGuardKit */,
+			);
+			productName = TEZVPNTunnel;
+			productReference = F020;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = L000;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = ru;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				ru,
+				Base,
+			);
+			mainGroup = G000;
+			packageReferences = (
+				P002 /* XCRemoteSwiftPackageReference "amneziawg-apple" */,
+			);
+			productRefGroup = G003;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				T001 /* TEZVPN */,
+				T002 /* TEZVPNTunnel */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		R001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B007 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		R002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B001 /* TEZVPNApp.swift in Sources */,
+				B002 /* ContentView.swift in Sources */,
+				B003 /* Models.swift in Sources */,
+				B004 /* ShopApi.swift in Sources */,
+				B005 /* ShopStore.swift in Sources */,
+				B006 /* VpnManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B010 /* PacketTunnelProvider.swift in Sources */,
+				B011 /* TunnelConfiguration+WgQuick.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		Y001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = T002 /* TEZVPNTunnel */;
+			targetProxy = C001;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		K001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		K002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		K011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TEZVPN/TEZVPN.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TEZVPN/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.tezvpn.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		K012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TEZVPN/TEZVPN.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TEZVPN/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.tezvpn.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		K021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TEZVPNTunnel/TEZVPNTunnel.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TEZVPNTunnel/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.tezvpn.app.tunnel;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		K022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TEZVPNTunnel/TEZVPNTunnel.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TEZVPNTunnel/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.tezvpn.app.tunnel;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		L000 /* Build configuration list for PBXProject "TEZVPN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				K001 /* Debug */,
+				K002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		L001 /* Build configuration list for PBXNativeTarget "TEZVPN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				K011 /* Debug */,
+				K012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		L002 /* Build configuration list for PBXNativeTarget "TEZVPNTunnel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				K021 /* Debug */,
+				K022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		P002 /* XCRemoteSwiftPackageReference "amneziawg-apple" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/amnezia-vpn/amneziawg-apple";
+			requirement = {
+				kind = branch;
+				branch = master;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		P001 /* WireGuardKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = P002 /* XCRemoteSwiftPackageReference "amneziawg-apple" */;
+			productName = WireGuardKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = P000;
+}

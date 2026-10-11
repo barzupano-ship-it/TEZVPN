@@ -1,0 +1,238 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'config.dart';
+import 'models.dart';
+
+class ShopApi {
+  ShopApi(this._prefs);
+
+  final SharedPreferences _prefs;
+  final _client = http.Client();
+  String protocol = 'awg';
+
+  String get deviceFp {
+    var id = _prefs.getString('fp');
+    if (id == null || id.isEmpty) {
+      const hex = '0123456789abcdef';
+      final r = Random.secure();
+      id = List.generate(32, (_) => hex[r.nextInt(16)]).join();
+      _prefs.setString('fp', id);
+    }
+    return id;
+  }
+
+  Map<String, String> get _headers {
+    final h = <String, String>{
+      'Accept': 'application/json',
+      'X-Tez-FP': deviceFp,
+      'X-Tez-Tenant': ShopConfig.tenant,
+      'X-Tez-Proto': protocol,
+    };
+    final cookie = _prefs.getString('cookie_value');
+    if (cookie != null && cookie.isNotEmpty) {
+      h['Cookie'] = 'tezweb=$cookie';
+    }
+    return h;
+  }
+
+  void _saveCookies(http.BaseResponse resp) {
+    final raw = resp.headers['set-cookie'];
+    if (raw == null) return;
+    final m = RegExp(r'tezweb=([^;]+)').firstMatch(raw);
+    if (m != null) {
+      _prefs.setString('cookie_value', m.group(1)!);
+    }
+  }
+
+  Future<Map<String, dynamic>> _request(
+    String path, {
+    String method = 'GET',
+    Map<String, dynamic>? jsonBody,
+  }) async {
+    final uri = Uri.parse('${ShopConfig.shopUrl}$path');
+    late http.Response resp;
+    final headers = Map<String, String>.from(_headers);
+    if (jsonBody != null) {
+      headers['Content-Type'] = 'application/json; charset=utf-8';
+    }
+    var attempt = 0;
+    while (true) {
+      try {
+        if (method == 'POST') {
+          resp = await _client.post(
+            uri,
+            headers: headers,
+            body: jsonBody == null ? null : jsonEncode(jsonBody),
+          );
+        } else {
+          resp = await _client.get(uri, headers: headers);
+        }
+        break;
+      } catch (e) {
+        attempt++;
+        final text = e.toString();
+        final again = attempt < 2 &&
+            (text.contains('SocketException') ||
+                text.contains('ClientException') ||
+                text.contains('HandshakeException') ||
+                text.contains('10057'));
+        if (!again) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+    }
+    _saveCookies(resp);
+    Map<String, dynamic> obj = {};
+    if (resp.body.startsWith('{')) {
+      obj = jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    if (resp.statusCode >= 400) {
+      final err = (obj['error'] as String?)?.trim();
+      throw Exception((err == null || err.isEmpty) ? 'Ошибка ${resp.statusCode}' : err);
+    }
+    return obj;
+  }
+
+  Future<ShopState> state() async => parseState(await _request('/api/state'));
+
+  Future<VpnConfig?> fetchConfig({String? oid}) async {
+    try {
+      final q = (oid != null && oid.isNotEmpty) ? '?oid=${Uri.encodeQueryComponent(oid)}' : '';
+      final obj = await _request('/api/config$q');
+      return _config((obj['config'] as Map?)?.cast<String, dynamic>());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<ShopState> startOrder(String planId) async =>
+      parseState(await _request('/api/order', method: 'POST', jsonBody: {'plan': planId}));
+
+  Future<ShopState> setName(String name) async =>
+      parseState(await _request('/api/name', method: 'POST', jsonBody: {'name': name}));
+
+  Future<ShopState> login(String code) async {
+    await _request('/api/login', method: 'POST', jsonBody: {'code': code});
+    return state();
+  }
+
+  Future<ShopState> uploadReceipt(List<int> bytes, String filename) async {
+    final uri = Uri.parse('${ShopConfig.shopUrl}/api/receipt');
+    final req = http.MultipartRequest('POST', uri);
+    req.headers.addAll(_headers);
+    req.files.add(http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: filename,
+    ));
+    final streamed = await _client.send(req);
+    final resp = await http.Response.fromStream(streamed);
+    _saveCookies(resp);
+    Map<String, dynamic> obj = {};
+    if (resp.body.startsWith('{')) {
+      obj = jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    if (resp.statusCode >= 400) {
+      final err = (obj['error'] as String?)?.trim();
+      throw Exception((err == null || err.isEmpty) ? 'Не удалось отправить чек' : err);
+    }
+    return parseState(obj.containsKey('plans') ? obj : await _request('/api/state'));
+  }
+
+  static ShopState parseState(Map<String, dynamic> obj) {
+    final plans = (obj['plans'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => e.cast<String, dynamic>())
+        .map(_plan)
+        .whereType<Plan>()
+        .toList();
+    final orders = (obj['orders'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => e.cast<String, dynamic>())
+        .map(_order)
+        .whereType<Order>()
+        .toList();
+    final order = _order((obj['order'] as Map?)?.cast<String, dynamic>() ?? {});
+    final pay = (obj['pay'] as Map?)?.cast<String, dynamic>() ?? {};
+    final meta = (obj['meta'] as Map?)?.cast<String, dynamic>() ?? {};
+    final acc = (obj['account'] as Map?)?.cast<String, dynamic>();
+    return ShopState(
+      plans: plans,
+      pay: PayInfo(
+        alif: '${pay['alif'] ?? ''}',
+        dc: '${pay['dc'] ?? ''}',
+        payee: '${pay['payee'] ?? ''}',
+        support: '${pay['support'] ?? ''}',
+        wechat: pay['wechat'] == true,
+        alipay: pay['alipay'] == true,
+      ),
+      order: order,
+      orders: orders.isEmpty ? [if (order != null) order] : orders,
+      config: _config((obj['config'] as Map?)?.cast<String, dynamic>()),
+      account: acc == null ? null : Account(code: '${acc['code'] ?? ''}'),
+      meta: Meta(
+        title: (meta['title'] as String?)?.isNotEmpty == true ? meta['title'] as String : ShopConfig.appName,
+        bot: (meta['bot'] as String?)?.isNotEmpty == true ? meta['bot'] as String : 'teztezvpn_bot',
+        support: (meta['support'] as String?)?.isNotEmpty == true
+            ? meta['support'] as String
+            : ShopConfig.support,
+      ),
+      flash: (obj['flash'] as String?)?.isEmpty == true ? null : obj['flash'] as String?,
+    );
+  }
+
+  static Plan? _plan(Map<String, dynamic> o) {
+    final id = '${o['id'] ?? ''}';
+    if (id.isEmpty) return null;
+    return Plan(
+      id: id,
+      title: '${o['title'] ?? id}',
+      tjs: (o['tjs'] as num?)?.toDouble() ?? 0,
+      cny: (o['cny'] as num?)?.toDouble() ?? 0,
+      devices: (o['devices'] as num?)?.toInt() ?? 1,
+      expires: '${o['expires'] ?? ''}',
+    );
+  }
+
+  static Order? _order(Map<String, dynamic> o) {
+    final id = '${o['id'] ?? ''}';
+    if (id.isEmpty) return null;
+    final st = '${o['status'] ?? ''}';
+    return Order(
+      id: id,
+      plan: '${o['plan'] ?? ''}',
+      title: '${o['title'] ?? ''}',
+      amount: '${o['amount'] ?? ''}'.replaceAll('.0', ''),
+      status: st,
+      statusLabel: '${o['status_label'] ?? st}',
+      name: '${o['name'] ?? ''}',
+      ready: o['ready'] == true || st == 'fulfilled',
+    );
+  }
+
+  static VpnConfig? _config(Map<String, dynamic>? obj) {
+    if (obj == null) return null;
+    final devices = (obj['devices'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => e.cast<String, dynamic>())
+        .map((d) {
+          final conf = '${d['conf'] ?? ''}';
+          if (conf.isEmpty) return null;
+          return VpnDevice(
+            name: '${d['name'] ?? ''}',
+            conf: conf,
+            vpnuri: '${d['vpnuri'] ?? ''}',
+            xray: '${d['xray'] ?? ''}',
+            hysteria2: '${d['hysteria2'] ?? d['hy2'] ?? ''}',
+            sub: '${d['sub'] ?? ''}',
+          );
+        })
+        .whereType<VpnDevice>()
+        .toList();
+    if (devices.isEmpty) return null;
+    return VpnConfig(sid: '${obj['sid'] ?? ''}', devices: devices);
+  }
+}
