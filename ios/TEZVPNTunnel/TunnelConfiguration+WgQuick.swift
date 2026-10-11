@@ -35,10 +35,17 @@ extension TunnelConfiguration {
         if let v = attr(iface, "Jmax").flatMap(UInt16.init) { cfg.junkPacketMaxSize = v }
         if let v = attr(iface, "S1").flatMap(UInt16.init) { cfg.initPacketJunkSize = v }
         if let v = attr(iface, "S2").flatMap(UInt16.init) { cfg.responsePacketJunkSize = v }
+        if let v = attr(iface, "S3").flatMap(UInt16.init) { cfg.cookieReplyPacketJunkSize = v }
+        if let v = attr(iface, "S4").flatMap(UInt16.init) { cfg.transportPacketJunkSize = v }
         if let h = attr(iface, "H1") { cfg.initPacketMagicHeader = h }
         if let h = attr(iface, "H2") { cfg.responsePacketMagicHeader = h }
         if let h = attr(iface, "H3") { cfg.underloadPacketMagicHeader = h }
         if let h = attr(iface, "H4") { cfg.transportPacketMagicHeader = h }
+        if let v = attr(iface, "I1") { cfg.specialJunk1 = v }
+        if let v = attr(iface, "I2") { cfg.specialJunk2 = v }
+        if let v = attr(iface, "I3") { cfg.specialJunk3 = v }
+        if let v = attr(iface, "I4") { cfg.specialJunk4 = v }
+        if let v = attr(iface, "I5") { cfg.specialJunk5 = v }
         return cfg
     }
 
