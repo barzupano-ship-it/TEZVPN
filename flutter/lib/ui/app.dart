@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
+import '../features/authentication/presentation/screens/legal_placeholder_screen.dart';
+import '../features/authentication/presentation/screens/welcome_screen.dart';
+import '../features/vpn/application/vpn_home_controller.dart';
+import '../features/vpn/presentation/screens/servers_screen.dart';
+import '../features/vpn/presentation/screens/subscription_screen.dart';
+import '../features/vpn/presentation/screens/vpn_home_screen.dart';
+import '../features/vpn/presentation/screens/vpn_settings_page.dart';
+import '../features/vpn/presentation/screens/vpn_settings_screen.dart';
+import '../features/vpn/presentation/widgets/vpn_bottom_navigation.dart';
 import '../l10n.dart';
 import '../models.dart';
 import '../shop_controller.dart';
@@ -47,95 +57,122 @@ class _TezHomeState extends State<TezHome> with WidgetsBindingObserver {
       listenable: controller,
       builder: (context, _) {
         final ui = controller;
-        final t = ui.l10n;
-        return Scaffold(
-          backgroundColor: navy,
-          bottomNavigationBar: NavigationBar(
-            backgroundColor: card,
-            indicatorColor: gold,
-            selectedIndex: _tabIndex(ui.screen),
-            onDestinationSelected: (i) {
-              ui.go(['vpn', 'home', 'pay', 'account'][i]);
+        if (ui.screen == 'welcome' || ui.screen == 'auth' || ui.screen == 'terms' || ui.screen == 'privacy') {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: switch (ui.screen) {
+              'auth' => WelcomeScreen(shop: ui),
+              'terms' => LegalPlaceholderScreen(shop: ui, title: 'Условия использования'),
+              'privacy' => LegalPlaceholderScreen(shop: ui, title: 'Политика конфиденциальности'),
+              _ => WelcomeScreen(shop: ui),
             },
-            destinations: [
-              NavigationDestination(icon: const Icon(Icons.power_settings_new), label: t.tabVpn),
-              NavigationDestination(icon: const Icon(Icons.shopping_bag_outlined), label: t.tabPlans),
-              NavigationDestination(icon: const Icon(Icons.credit_card_outlined), label: t.tabPay),
-              NavigationDestination(icon: const Icon(Icons.person_outline), label: t.tabAccount),
-            ],
-          ),
+          );
+        }
+        final home = VpnHomeController(ui);
+        final onHome = ui.screen == 'vpn';
+        final settings = _settingsScreen(ui.screen);
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+          child: Scaffold(
+          backgroundColor: Colors.white,
           body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.appTitle,
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: gold),
-                          ),
-                          Text(t.tagline, style: const TextStyle(color: mute)),
-                        ],
-                      ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 320),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    layoutBuilder: (currentChild, previousChildren) => currentChild ?? const SizedBox.shrink(),
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(begin: const Offset(0.08, 0), end: Offset.zero).animate(animation);
+                      return SlideTransition(position: slide, child: child);
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey(ui.screen),
+                      child: onHome
+                      ? VpnHomeScreen(shop: ui)
+                      : settings
+                          ? _body(ui)
+                          : ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            if (ui.loading)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 12),
+                                child: Center(child: CircularProgressIndicator(color: Color(0xFF2F6FED))),
+                              ),
+                            if (ui.error != null && !ui.vpnOn)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(ui.error!, style: const TextStyle(color: Color(0xFFC62828))),
+                              ),
+                            if (ui.message != null && !ui.vpnOn)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(ui.message!, style: const TextStyle(color: Color(0xFF1E4FD8))),
+                              ),
+                            _body(ui),
+                          ],
+                        ),
                     ),
-                    _LangSwitch(ui: ui),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                if (ui.loading) Center(child: CircularProgressIndicator(color: gold)),
-                if (ui.error != null && !ui.vpnOn)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(ui.error!, style: const TextStyle(color: Color(0xFFFF8A80))),
-                  ),
-                if (ui.message != null && !ui.vpnOn)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(ui.message!, style: TextStyle(color: gold)),
-                  ),
-                if (ui.busy || ui.connecting)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(color: gold, strokeWidth: 3),
-                    ),
-                  ),
-                if (!ui.loading) _body(ui),
+                VpnBottomNavigation(index: home.tab, onSelected: home.openTab),
               ],
             ),
+          ),
           ),
         );
       },
     );
   }
 
-  int _tabIndex(String screen) {
-    if (screen == 'order') return 1;
-    const tabs = ['vpn', 'home', 'pay', 'account'];
-    final i = tabs.indexOf(screen);
-    return i < 0 ? 1 : i;
-  }
-
   Widget _body(ShopController ui) {
     switch (ui.screen) {
-      case 'vpn':
-        return _Vpn(ui: ui);
+      case 'servers':
+        return ServersScreen(shop: ui);
       case 'pay':
         return _Pay(ui: ui);
       case 'order':
         return _Order(ui: ui);
       case 'account':
         return _Account(ui: ui);
+      case 'settings':
+        return VpnSettingsScreen(shop: ui);
+      case 'device-signin':
+      case 'netshield':
+      case 'split':
+      case 'killswitch':
+      case 'protocol':
+      case 'accelerator':
+      case 'advanced':
+      case 'language':
+      case 'privacy-note':
+      case 'support':
+        return VpnSettingsPage(shop: ui, page: ui.screen);
       default:
         return _Plans(ui: ui);
     }
+  }
+}
+
+bool _settingsScreen(String screen) {
+  switch (screen) {
+    case 'settings':
+    case 'device-signin':
+    case 'netshield':
+    case 'split':
+    case 'killswitch':
+    case 'protocol':
+    case 'accelerator':
+    case 'advanced':
+    case 'language':
+    case 'privacy-note':
+    case 'support':
+      return true;
+    default:
+      return false;
   }
 }
 
@@ -178,132 +215,13 @@ class _LangSwitch extends StatelessWidget {
   }
 }
 
-class _Vpn extends StatelessWidget {
-  const _Vpn({required this.ui});
-  final ShopController ui;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = ui.l10n;
-    final devices = ui.shop.config?.devices ?? const <VpnDevice>[];
-    final ready = ui.protocolReady;
-    final order = ui.shop.order;
-    String status;
-    if (ui.connecting) {
-      status = t.connecting;
-    } else if (ui.vpnOn) {
-      status = t.vpnOn;
-    } else if (ready) {
-      status = t.confReady;
-    } else if (order?.status == 'waiting_review') {
-      status = t.waitingReview;
-    } else {
-      status = t.buyFirst;
-    }
-    return Column(
-      children: [
-        const SizedBox(height: 24),
-        Center(
-          child: SizedBox(
-            width: 160,
-            height: 160,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                shape: const CircleBorder(),
-                backgroundColor: ui.vpnOn ? const Color(0xFF1FA971) : gold,
-                foregroundColor: const Color(0xFF111111),
-              ),
-              onPressed: () {
-                if (!ready && !ui.vpnOn) {
-                  ui.go('home');
-                } else {
-                  ui.toggleVpn();
-                }
-              },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.power_settings_new, size: 48),
-                  Text(
-                    ui.vpnOn
-                        ? t.on
-                        : ready
-                            ? t.turnOn
-                            : t.buy,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(status, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
-        if (ready)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(devices.first.name, style: const TextStyle(color: mute)),
-          ),
-        if (order != null && !ready) StatusCard(order: order, l10n: t),
-      ],
-    );
-  }
-}
-
 class _Plans extends StatelessWidget {
   const _Plans({required this.ui});
   final ShopController ui;
 
   @override
   Widget build(BuildContext context) {
-    final t = ui.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(t.plans, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        if (ui.shop.plans.isEmpty) ...[
-          Text(t.plansFail, style: const TextStyle(color: mute)),
-          FilledButton(onPressed: ui.refresh, child: Text(t.refresh)),
-        ],
-        for (final plan in ui.shop.plans) ...[
-          _PlanCard(plan: plan, l10n: t, onBuy: () => ui.buy(plan.id)),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
-}
-
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({required this.plan, required this.l10n, required this.onBuy});
-  final Plan plan;
-  final L10n l10n;
-  final VoidCallback onBuy;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(plan.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-          Text(
-            '${plan.tjs.toInt()} смн · ¥${plan.cny.toInt()} · ${plan.devices} ${l10n.devices}',
-            style: TextStyle(color: gold),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: onBuy,
-            style: FilledButton.styleFrom(backgroundColor: gold, foregroundColor: const Color(0xFF111111)),
-            child: Text(l10n.buyBtn, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+    return SubscriptionScreen(shop: ui);
   }
 }
 
@@ -329,7 +247,7 @@ class _Order extends StatelessWidget {
           if (o.status == 'awaiting_name') ...[
             TextField(
               controller: ui.nameCtrl,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Color(0xFF1A1C1E)),
               decoration: InputDecoration(
                 labelText: t.yourName,
                 labelStyle: const TextStyle(color: mute),
@@ -352,10 +270,10 @@ class _Order extends StatelessWidget {
             Text(t.readyVpn, style: TextStyle(color: gold)),
             FilledButton(onPressed: () => ui.go('vpn'), child: Text(t.openVpn)),
           ] else if (o.status == 'rejected') ...[
-            Text(t.rejected, style: const TextStyle(color: Color(0xFFFF8A80))),
+            Text(t.rejected, style: const TextStyle(color: Color(0xFFC62828))),
             FilledButton(onPressed: () => ui.go('home'), child: Text(t.toPlans)),
           ] else if (o.status == 'disabled')
-            Text(t.disabled, style: const TextStyle(color: Color(0xFFFF8A80))),
+            Text(t.disabled, style: const TextStyle(color: Color(0xFFC62828))),
         ],
       ],
     );
@@ -378,8 +296,14 @@ class _Pay extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16)),
-          child: Column(
+          decoration: BoxDecoration(
+            color: const Color(0xFFEEF4FF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFD5E4F7)),
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: Color(0xFF1C1B22)),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (pay.payee.isNotEmpty) Text('${t.payee}: ${pay.payee}'),
@@ -388,6 +312,7 @@ class _Pay extends StatelessWidget {
               if (pay.payee.isEmpty && pay.alif.isEmpty)
                 Text(t.loadingPay, style: const TextStyle(color: mute)),
             ],
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -419,48 +344,71 @@ class _Account extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = ui.l10n;
+    final login = ui.shop.account?.login ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t.account, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        if ((ui.shop.account?.code ?? '').isNotEmpty) ...[
-          Text(t.inCabinet, style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            ui.shop.account!.code,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 1.2),
-          ),
-          Text(t.saveCode, style: const TextStyle(color: mute)),
-          if (ui.shop.order != null) ...[
-            const SizedBox(height: 12),
-            FilledButton(onPressed: () => ui.go('order'), child: Text(t.continueOrder)),
+        Row(
+          children: [
+            Expanded(child: Text(t.account, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+            _LangSwitch(ui: ui),
           ],
-          const SizedBox(height: 16),
-          Text(t.otherPhone, style: const TextStyle(color: mute)),
-        ] else ...[
-          Text('${t.accessCode}: —'),
-          Text(t.saveCode, style: const TextStyle(color: mute)),
-        ],
-        const SizedBox(height: 12),
-        TextField(
-          controller: ui.loginCtrl,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: t.loginByCode,
-            labelStyle: const TextStyle(color: mute),
-            enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: mute)),
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: gold)),
-          ),
         ),
         const SizedBox(height: 8),
-        FilledButton(onPressed: ui.login, child: Text(t.signIn)),
+        if (login.isNotEmpty) ...[
+          Text(login.startsWith('tg:') ? t.signedInAs('Telegram') : t.signedInAs(login), style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+        ] else ...[
+          Text(t.registerTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('Почта или телефон и пароль — на первом экране.', style: const TextStyle(color: mute)),
+          const SizedBox(height: 12),
+          FilledButton(onPressed: ui.openRegistration, child: Text(t.createAccount)),
+          const SizedBox(height: 20),
+        ],
+        if (ui.shop.order != null) ...[
+          FilledButton(onPressed: () => ui.go('order'), child: Text(t.continueOrder)),
+          const SizedBox(height: 16),
+        ],
+        Text(login.isEmpty ? t.signInTitle : t.otherAccount, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        _AccountField(controller: ui.passLoginCtrl, label: t.loginLabel),
+        _AccountField(controller: ui.passCtrl, label: t.passwordLabel, secret: true),
+        const SizedBox(height: 8),
+        FilledButton(onPressed: ui.busy ? null : ui.loginWithPassword, child: Text(t.signIn)),
         const SizedBox(height: 16),
         SupportLink(
           user: ui.shop.meta.support.isEmpty ? ShopConfig.support : ui.shop.meta.support,
           label: t.support,
         ),
       ],
+    );
+  }
+}
+
+class _AccountField extends StatelessWidget {
+  const _AccountField({required this.controller, required this.label, this.secret = false});
+  final TextEditingController controller;
+  final String label;
+  final bool secret;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        controller: controller,
+        obscureText: secret,
+        autocorrect: false,
+        enableSuggestions: !secret,
+        style: const TextStyle(color: Color(0xFF1A1C1E)),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: mute),
+          enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: mute)),
+          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: gold)),
+        ),
+      ),
     );
   }
 }
@@ -475,8 +423,14 @@ class StatusCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16)),
-      child: Column(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF4FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD5E4F7)),
+      ),
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(color: Color(0xFF1C1B22)),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(order.title.isEmpty ? order.plan : order.title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -484,6 +438,7 @@ class StatusCard extends StatelessWidget {
           if (order.amount.isNotEmpty) Text('${order.amount} смн', style: const TextStyle(color: mute)),
           if (order.name.isNotEmpty) Text(order.name, style: const TextStyle(color: mute)),
         ],
+        ),
       ),
     );
   }

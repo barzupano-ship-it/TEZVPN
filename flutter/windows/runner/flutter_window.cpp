@@ -76,6 +76,18 @@ bool FlutterWindow::OnCreate() {
           result->Success();
           return;
         }
+        if (method == "traffic") {
+          unsigned long long upload = 0;
+          unsigned long long download = 0;
+          TezVpnTraffic(&upload, &download);
+          flutter::EncodableMap totals;
+          totals[flutter::EncodableValue("up")] =
+              flutter::EncodableValue(static_cast<int64_t>(upload));
+          totals[flutter::EncodableValue("down")] =
+              flutter::EncodableValue(static_cast<int64_t>(download));
+          result->Success(flutter::EncodableValue(totals));
+          return;
+        }
         result->NotImplemented();
       });
 

@@ -29,7 +29,7 @@ KS_PASS = "android"
 KEY_ALIAS = "androiddebugkey"
 
 DEFAULT_BRAND = {
-    "appName": "TEZVPN",
+    "appName": "SULTAN VPN",
     "shopUrl": "https://188-116-24-47.sslip.io",
     "support": "BarzuRizoev",
     "tenant": "tez",

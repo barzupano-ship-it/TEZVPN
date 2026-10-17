@@ -1,7 +1,16 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -26,14 +35,18 @@ android {
         versionName = flutter.versionName
     }
 
-    val keystorePath = System.getenv("CM_KEYSTORE_PATH")
+    val keystorePath = System.getenv("CM_KEYSTORE_PATH")?.takeIf { it.isNotEmpty() }
+        ?: keystoreProperties.getProperty("storeFile")?.takeIf { it.isNotEmpty() }
     if (!keystorePath.isNullOrEmpty()) {
         signingConfigs {
             create("release") {
                 storeFile = file(keystorePath)
-                storePassword = System.getenv("CM_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("CM_KEY_ALIAS")
-                keyPassword = System.getenv("CM_KEY_PASSWORD")
+                storePassword = System.getenv("CM_KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+                    ?: keystoreProperties.getProperty("storePassword")
+                keyAlias = System.getenv("CM_KEY_ALIAS")?.takeIf { it.isNotEmpty() }
+                    ?: keystoreProperties.getProperty("keyAlias")
+                keyPassword = System.getenv("CM_KEY_PASSWORD")?.takeIf { it.isNotEmpty() }
+                    ?: keystoreProperties.getProperty("keyPassword")
             }
         }
     }

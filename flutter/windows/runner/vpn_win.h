@@ -13,5 +13,6 @@ std::string TezVpnConnect(const std::string& conf);
 std::string TezVpnConnectStack(const std::string& json, const std::string& protocol);
 std::string TezVpnDisconnect();
 bool TezVpnIsUp();
+void TezVpnTraffic(unsigned long long* upload, unsigned long long* download);
 
 #endif  // RUNNER_VPN_WIN_H_

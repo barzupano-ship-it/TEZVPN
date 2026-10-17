@@ -165,9 +165,9 @@ void RenameService() {
   }
   ChangeServiceConfigW(svc, SERVICE_NO_CHANGE, SERVICE_NO_CHANGE,
                        SERVICE_NO_CHANGE, nullptr, nullptr, nullptr, nullptr,
-                       nullptr, nullptr, L"TEZVPN");
+                       nullptr, nullptr, L"SULTAN VPN");
   SERVICE_DESCRIPTIONW desc;
-  desc.lpDescription = const_cast<LPWSTR>(L"TEZVPN");
+  desc.lpDescription = const_cast<LPWSTR>(L"SULTAN VPN");
   ChangeServiceConfig2W(svc, SERVICE_CONFIG_DESCRIPTION, &desc);
   CloseServiceHandle(svc);
   CloseServiceHandle(scm);
@@ -189,6 +189,45 @@ bool TunnelServiceExists() {
   }
   CloseServiceHandle(scm);
   return exists;
+}
+
+bool StopTunnelService() {
+  SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+  if (!scm) {
+    return false;
+  }
+  SC_HANDLE svc = OpenServiceW(scm, kServiceName, SERVICE_STOP | SERVICE_QUERY_STATUS);
+  if (!svc) {
+    const DWORD missing = GetLastError();
+    CloseServiceHandle(scm);
+    return missing == ERROR_SERVICE_DOES_NOT_EXIST;
+  }
+  const DWORD began = GetTickCount();
+  bool stopped = false;
+  while (GetTickCount() - began < 15000) {
+    SERVICE_STATUS_PROCESS status;
+    DWORD bytes = 0;
+    ZeroMemory(&status, sizeof(status));
+    if (!QueryServiceStatusEx(svc, SC_STATUS_PROCESS_INFO,
+                              reinterpret_cast<LPBYTE>(&status), sizeof(status),
+                              &bytes)) {
+      break;
+    }
+    if (status.dwCurrentState == SERVICE_STOPPED) {
+      stopped = true;
+      break;
+    }
+    if (status.dwCurrentState != SERVICE_STOP_PENDING &&
+        status.dwCurrentState != SERVICE_START_PENDING) {
+      SERVICE_STATUS ignored;
+      ZeroMemory(&ignored, sizeof(ignored));
+      ControlService(svc, SERVICE_CONTROL_STOP, &ignored);
+    }
+    Sleep(200);
+  }
+  CloseServiceHandle(svc);
+  CloseServiceHandle(scm);
+  return stopped;
 }
 
 bool ProcessRunning(const wchar_t* name) {
@@ -402,17 +441,27 @@ bool StartStack(const std::wstring& engine, const std::wstring& config) {
 
 int InstallFromEngine(const std::wstring& engine_dir, const std::wstring& conf) {
   const std::wstring exe = EngineExe(engine_dir);
-  // Uninstall only when the tunnel is already there. Otherwise amneziawg.exe
-  // shows "The specified service does not exist as an installed service."
-  if (TunnelServiceExists()) {
-    const std::wstring uninstall =
-        L"\"" + exe + L"\" /uninstalltunnelservice " + kTunnelName;
+  const std::wstring uninstall =
+      L"\"" + exe + L"\" /uninstalltunnelservice " + kTunnelName;
+  // Stop first. amneziawg.exe shows "Tunnel already installed and running"
+  // and refuses to install over a service that is still started.
+  for (int attempt = 0; attempt < 6; ++attempt) {
+    StopTunnelService();
+    if (!TunnelServiceExists()) {
+      break;
+    }
     RunHidden(uninstall, engine_dir);
-    Sleep(500);
+    Sleep(400);
   }
   const std::wstring install =
       L"\"" + exe + L"\" /installtunnelservice \"" + conf + L"\"";
-  const DWORD code = RunHidden(install, engine_dir);
+  DWORD code = RunHidden(install, engine_dir);
+  if (code != 0) {
+    StopTunnelService();
+    RunHidden(uninstall, engine_dir);
+    Sleep(600);
+    code = RunHidden(install, engine_dir);
+  }
   if (code != 0) {
     return static_cast<int>(code);
   }
@@ -437,9 +486,9 @@ std::string Elevate(const std::wstring& params) {
   sei.nShow = SW_HIDE;
   if (!ShellExecuteExW(&sei)) {
     if (GetLastError() == ERROR_CANCELLED) {
-      return "Нужно разрешить запуск TEZVPN";
+      return "Нужно разрешить запуск SULTAN VPN";
     }
-    return "Не удалось запустить TEZVPN";
+    return "Не удалось запустить SULTAN VPN";
   }
   if (sei.hProcess) {
     WaitForSingleObject(sei.hProcess, 120000);
@@ -450,7 +499,7 @@ std::string Elevate(const std::wstring& params) {
     return "";
   }
   if (result.empty()) {
-    return "TEZVPN не включился";
+    return "SULTAN VPN не включился";
   }
   return result;
 }
@@ -462,12 +511,12 @@ int TezInstallTunnel(const wchar_t* conf_path) {
   const std::wstring dir = ProgramDataDir();
   const std::wstring engine = dir + L"\\engine";
   if (!conf_path || !EnsureDir(dir) || !CopyEngineTo(engine)) {
-    WriteResult("Не найдены файлы TEZVPN");
+    WriteResult("Не найдены файлы SULTAN VPN");
     return 1;
   }
   const int code = InstallFromEngine(engine, conf_path);
   if (code != 0) {
-    WriteResult("Не удалось включить TEZVPN");
+    WriteResult("Не удалось включить SULTAN VPN");
     return code;
   }
   WriteProto("awg");
@@ -480,9 +529,10 @@ int TezStartStack(const wchar_t* config_path, const wchar_t* protocol) {
   const std::wstring engine = dir + L"\\engine";
   KillStack();
   if (!config_path || !EnsureDir(dir) || !CopyEngineTo(engine)) {
-    WriteResult("Не найдены файлы TEZVPN");
+    WriteResult("Не найдены файлы SULTAN VPN");
     return 1;
   }
+  StopTunnelService();
   if (TunnelServiceExists()) {
     const std::wstring uninstall =
         L"\"" + EngineExe(engine) + L"\" /uninstalltunnelservice " + kTunnelName;
@@ -505,6 +555,7 @@ int TezStartStack(const wchar_t* config_path, const wchar_t* protocol) {
 
 int TezRemoveTunnel() {
   KillStack();
+  StopTunnelService();
   if (!TunnelServiceExists()) {
     WriteProto("off");
     WriteResult("ok");
@@ -515,8 +566,8 @@ int TezRemoveTunnel() {
   const std::wstring command =
       L"\"" + exe + L"\" /uninstalltunnelservice " + kTunnelName;
   const DWORD code = RunHidden(command, engine);
-  if (code != 0) {
-    WriteResult("Не удалось выключить TEZVPN");
+  if (code != 0 && TunnelServiceExists()) {
+    WriteResult("Не удалось выключить SULTAN VPN");
     return static_cast<int>(code);
   }
   WriteProto("off");
@@ -526,15 +577,15 @@ int TezRemoveTunnel() {
 
 std::string TezVpnConnect(const std::string& conf) {
   if (conf.empty()) {
-    return "Нет конфигурации TEZVPN";
+    return "Нет конфигурации SULTAN VPN";
   }
   const std::wstring dir = ProgramDataDir();
   if (!EnsureDir(dir)) {
-    return "Не удалось подготовить TEZVPN";
+    return "Не удалось подготовить SULTAN VPN";
   }
   const std::wstring conf_path = dir + L"\\TEZVPN.conf";
   if (!WriteUtf8(conf_path, conf)) {
-    return "Не удалось сохранить конфигурацию TEZVPN";
+    return "Не удалось сохранить конфигурацию SULTAN VPN";
   }
   if (IsAdmin()) {
     const int code = TezInstallTunnel(conf_path.c_str());
@@ -545,15 +596,15 @@ std::string TezVpnConnect(const std::string& conf) {
 
 std::string TezVpnConnectStack(const std::string& json, const std::string& protocol) {
   if (json.empty()) {
-    return "Нет конфигурации TEZVPN";
+    return "Нет конфигурации SULTAN VPN";
   }
   const std::wstring dir = ProgramDataDir();
   if (!EnsureDir(dir)) {
-    return "Не удалось подготовить TEZVPN";
+    return "Не удалось подготовить SULTAN VPN";
   }
   const std::wstring path = dir + L"\\stack.json";
   if (!WriteUtf8(path, json)) {
-    return "Не удалось сохранить конфигурацию TEZVPN";
+    return "Не удалось сохранить конфигурацию SULTAN VPN";
   }
   const std::wstring proto = protocol == "hy2" ? L"hy2" : L"xray";
   if (IsAdmin()) {
@@ -591,4 +642,36 @@ bool TezVpnIsUp() {
   CloseServiceHandle(svc);
   CloseServiceHandle(scm);
   return ok && status.dwCurrentState == SERVICE_RUNNING;
+}
+
+void TezVpnTraffic(unsigned long long* upload, unsigned long long* download) {
+  if (upload) *upload = 0;
+  if (download) *download = 0;
+  PMIB_IF_TABLE2 table = nullptr;
+  if (GetIfTable2(&table) != NO_ERROR || table == nullptr) {
+    return;
+  }
+  unsigned long long sent = 0;
+  unsigned long long received = 0;
+  bool exact = false;
+  for (ULONG i = 0; i < table->NumEntries; ++i) {
+    const MIB_IF_ROW2& row = table->Table[i];
+    const bool named = wcsstr(row.Alias, L"TEZVPN") != nullptr;
+    const bool tunnel = wcsstr(row.Description, L"Amnezia") != nullptr ||
+                        wcsstr(row.Description, L"Wintun") != nullptr;
+    if (!named && !tunnel) {
+      continue;
+    }
+    if (exact && !named) {
+      continue;
+    }
+    sent = row.OutOctets;
+    received = row.InOctets;
+    if (named) {
+      exact = true;
+    }
+  }
+  FreeMibTable(table);
+  if (upload) *upload = sent;
+  if (download) *download = received;
 }

@@ -4,7 +4,7 @@ SetCompressor /SOLID lzma
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 
-Name "TEZVPN"
+Name "SULTAN VPN"
 OutFile "D:\TEZ VPN APP\downloads\TEZVPN-Setup.exe"
 InstallDir "$LOCALAPPDATA\TEZVPN"
 RequestExecutionLevel user
@@ -30,7 +30,7 @@ Section
   File /r "D:\TEZ VPN APP\flutter\build\windows\x64\runner\Release\data\*.*"
   SetOutPath "$INSTDIR\engine"
   File "D:\TEZ VPN APP\flutter\build\windows\x64\runner\Release\engine\*.*"
-  CreateShortcut "$DESKTOP\TEZVPN.lnk" "$INSTDIR\TEZVPN.exe" "" "$INSTDIR\TEZVPN.exe" 0
+  CreateShortcut "$DESKTOP\SULTAN VPN.lnk" "$INSTDIR\TEZVPN.exe" "" "$INSTDIR\TEZVPN.exe" 0
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   IfSilent done
   Exec '"$INSTDIR\TEZVPN.exe"'

@@ -103,7 +103,8 @@ class Order {
 
 class Account {
   final String code;
-  const Account({this.code = ''});
+  final String login;
+  const Account({this.code = '', this.login = ''});
 }
 
 class Meta {
@@ -112,7 +113,7 @@ class Meta {
   final String support;
 
   const Meta({
-    this.title = 'TEZVPN',
+    this.title = 'SULTAN VPN',
     this.bot = 'teztezvpn_bot',
     this.support = 'BarzuRizoev',
   });

@@ -1,11 +1,54 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config.dart';
 import 'models.dart';
+
+class SupportTicket {
+  const SupportTicket({
+    required this.id,
+    required this.body,
+    required this.reply,
+    required this.created,
+    required this.replied,
+    this.fileName = '',
+    this.fileMime = '',
+  });
+
+  final int id;
+  final String body;
+  final String reply;
+  final int created;
+  final int replied;
+  final String fileName;
+  final String fileMime;
+
+  bool get hasFile => fileName.isNotEmpty;
+
+  factory SupportTicket.fromJson(Map<String, dynamic> json) {
+    int num(Object? value) => value is int ? value : int.tryParse('$value') ?? 0;
+    final file = json['file'];
+    var fileName = '';
+    var fileMime = '';
+    if (file is Map) {
+      fileName = '${file['name'] ?? ''}';
+      fileMime = '${file['mime'] ?? ''}';
+    }
+    return SupportTicket(
+      id: num(json['id']),
+      body: '${json['body'] ?? ''}',
+      reply: '${json['reply'] ?? ''}',
+      created: num(json['created']),
+      replied: num(json['replied']),
+      fileName: fileName,
+      fileMime: fileMime,
+    );
+  }
+}
 
 class ShopApi {
   ShopApi(this._prefs);
@@ -119,6 +162,96 @@ class ShopApi {
     return state();
   }
 
+  Future<ShopState> register(String login, String password) async {
+    await _request('/api/register', method: 'POST', jsonBody: {
+      'login': login,
+      'password': password,
+    });
+    return state();
+  }
+
+  Future<ShopState> loginWithPassword(String login, String password) async {
+    await _request('/api/login', method: 'POST', jsonBody: {
+      'login': login,
+      'password': password,
+    });
+    return state();
+  }
+
+  Future<({String challenge, String url})> startTelegramLogin() async {
+    final obj = await _request('/api/auth/telegram/start', method: 'POST', jsonBody: {});
+    final challenge = '${obj['challenge'] ?? ''}';
+    final url = '${obj['url'] ?? ''}';
+    if (challenge.isEmpty || url.isEmpty) {
+      throw Exception('Не удалось начать вход через Telegram.');
+    }
+    return (challenge: challenge, url: url);
+  }
+
+  Future<({String code})> startDeviceLogin() async {
+    final obj = await _request('/api/auth/device/start', method: 'POST', jsonBody: {});
+    final code = '${obj['code'] ?? ''}'.trim();
+    if (code.isEmpty) throw Exception('Не удалось создать код для другого телефона.');
+    return (code: code);
+  }
+
+  Future<List<SupportTicket>> supportTickets() async {
+    final obj = await _request('/api/support');
+    final raw = obj['items'];
+    if (raw is! List) return const [];
+    return raw.map((item) => SupportTicket.fromJson((item as Map).cast<String, dynamic>())).toList();
+  }
+
+  Future<void> sendSupport(String text) async {
+    await _request('/api/support', method: 'POST', jsonBody: {'text': text.trim()});
+  }
+
+  Future<void> sendSupportFile(List<int> bytes, String filename, String text) async {
+    final uri = Uri.parse('${ShopConfig.shopUrl}/api/support/file');
+    final req = http.MultipartRequest('POST', uri);
+    req.headers.addAll(_headers);
+    final caption = text.trim();
+    if (caption.isNotEmpty) req.fields['text'] = caption;
+    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final streamed = await _client.send(req);
+    final resp = await http.Response.fromStream(streamed);
+    _saveCookies(resp);
+    Map<String, dynamic> obj = {};
+    if (resp.body.startsWith('{')) {
+      obj = jsonDecode(resp.body) as Map<String, dynamic>;
+    }
+    if (resp.statusCode >= 400) {
+      final err = (obj['error'] as String?)?.trim();
+      throw Exception((err == null || err.isEmpty) ? 'Не удалось отправить файл' : err);
+    }
+  }
+
+  Future<Uint8List> supportFile(int id) async {
+    final uri = Uri.parse('${ShopConfig.shopUrl}/api/support/file/$id');
+    final resp = await _client.get(uri, headers: _headers);
+    _saveCookies(resp);
+    if (resp.statusCode >= 400) {
+      var err = '';
+      if (resp.body.startsWith('{')) {
+        final obj = jsonDecode(resp.body);
+        if (obj is Map) err = '${obj['error'] ?? ''}'.trim();
+      }
+      throw Exception(err.isEmpty ? 'Файл не найден' : err);
+    }
+    return resp.bodyBytes;
+  }
+
+  Future<ShopState> claimDeviceLogin(String code) async {
+    await _request('/api/auth/device/claim', method: 'POST', jsonBody: {'code': code.trim()});
+    return state();
+  }
+  Future<String> pollTelegramLogin(String challenge) async {
+    final obj = await _request('/api/auth/telegram/poll', method: 'POST', jsonBody: {
+      'challenge': challenge,
+    });
+    return '${obj['status'] ?? ''}';
+  }
+
   Future<ShopState> uploadReceipt(List<int> bytes, String filename) async {
     final uri = Uri.parse('${ShopConfig.shopUrl}/api/receipt');
     final req = http.MultipartRequest('POST', uri);
@@ -172,7 +305,12 @@ class ShopApi {
       order: order,
       orders: orders.isEmpty ? [if (order != null) order] : orders,
       config: _config((obj['config'] as Map?)?.cast<String, dynamic>()),
-      account: acc == null ? null : Account(code: '${acc['code'] ?? ''}'),
+      account: acc == null
+          ? null
+          : Account(
+              code: '${acc['code'] ?? ''}',
+              login: '${acc['login'] ?? ''}',
+            ),
       meta: Meta(
         title: (meta['title'] as String?)?.isNotEmpty == true ? meta['title'] as String : ShopConfig.appName,
         bot: (meta['bot'] as String?)?.isNotEmpty == true ? meta['bot'] as String : 'teztezvpn_bot',

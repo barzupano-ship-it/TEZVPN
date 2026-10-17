@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "ru.tezvpn" "\0"
-            VALUE "FileDescription", "TEZVPN" "\0"
+            VALUE "FileDescription", "SULTAN VPN" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "tezvpn" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 ru.tezvpn. All rights reserved." "\0"
             VALUE "OriginalFilename", "tezvpn.exe" "\0"
-            VALUE "ProductName", "TEZVPN" "\0"
+            VALUE "ProductName", "SULTAN VPN" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class ShopConfig {
-  static String appName = 'TEZVPN';
+  static String appName = 'SULTAN VPN';
   static String shopUrl = 'https://188-116-24-47.sslip.io';
   static String support = 'BarzuRizoev';
   static String tunnelId = 'ru.tezvpn.app.tunnel';

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'config.dart';
@@ -75,16 +76,55 @@ class TezVpnApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.dark(
-          primary: ShopConfig.gold,
-          onPrimary: const Color(0xFF111111),
-          surface: ShopConfig.card,
-          error: const Color(0xFFFF6B6B),
+        brightness: Brightness.light,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF2F6FED),
+          onPrimary: Colors.white,
+          surface: Colors.white,
+          error: Color(0xFFC62828),
         ),
-        scaffoldBackgroundColor: ShopConfig.navy,
+        scaffoldBackgroundColor: Colors.white,
+        canvasColor: Colors.white,
       ),
-      home: TezHome(controller: controller),
+      home: DesktopPhoneFrame(child: TezHome(controller: controller)),
+    );
+  }
+}
+
+/// Windows and Mac use the same phone layout as the mobile app.
+class DesktopPhoneFrame extends StatelessWidget {
+  const DesktopPhoneFrame({super.key, required this.child});
+
+  final Widget child;
+
+  static const _width = 430.0;
+
+  bool get _desktop {
+    if (kIsWeb) return false;
+    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_desktop) return child;
+    return ColoredBox(
+      color: Colors.white,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth < _width ? constraints.maxWidth : _width;
+          final height = constraints.maxHeight;
+          return Center(
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(size: Size(width, height)),
+                child: child,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

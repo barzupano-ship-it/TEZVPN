@@ -44,5 +44,12 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Upload key for Google Play. Keep the files when handing the project to the client.
+# Do not publish them.
+/android/key.properties
+/android/app/*.jks
+/android/app/*.keystore
+/third_party/
+
 # Widget Preview related
 .widget_preview/
