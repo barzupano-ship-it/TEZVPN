@@ -19,7 +19,7 @@ class VpnHomeScreen extends StatelessWidget {
     final home = VpnHomeController(shop);
     return Column(
       children: [
-        VpnStatusHeader(status: home.statusLabel, onPremium: () => StoreSubscription.open(shop)),
+        VpnStatusHeader(status: home.statusLabel),
         if (shop.error != null && !shop.vpnOn)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
