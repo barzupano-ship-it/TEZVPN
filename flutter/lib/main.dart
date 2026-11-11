@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config.dart';
+import 'net_util.dart';
 import 'shop_controller.dart';
 import 'ui/app.dart';
 
@@ -11,7 +13,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = TezHttp();
   await ShopConfig.load();
-  runApp(TezVpnApp(controller: ShopController()..init()));
+  final prefs = await SharedPreferences.getInstance();
+  runApp(TezVpnApp(controller: ShopController(prefs: prefs)..init()));
 }
 
 /// Windows DNS (UDP sendto) fails with errno 10057 when the tunnel or IPv6
@@ -22,6 +25,7 @@ class TezHttp extends HttpOverrides {
   HttpClient createHttpClient(SecurityContext? context) {
     final client = super.createHttpClient(context);
     client.connectionTimeout = const Duration(seconds: 20);
+    client.idleTimeout = const Duration(seconds: 2);
     client.findProxy = (_) => 'DIRECT';
     client.connectionFactory = (uri, proxyHost, proxyPort) async {
       final ip = sslipAddress(uri.host);
@@ -49,20 +53,6 @@ class TezHttp extends HttpOverrides {
     };
     return client;
   }
-}
-
-String? sslipAddress(String host) {
-  final match = RegExp(
-    r'^(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})\.sslip\.io$',
-  ).firstMatch(host.toLowerCase());
-  if (match == null) return null;
-  final parts = <int>[];
-  for (var i = 1; i <= 4; i++) {
-    final n = int.parse(match.group(i)!);
-    if (n > 255) return null;
-    parts.add(n);
-  }
-  return parts.join('.');
 }
 
 class TezVpnApp extends StatelessWidget {

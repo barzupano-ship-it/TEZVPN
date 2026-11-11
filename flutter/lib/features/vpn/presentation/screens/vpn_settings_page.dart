@@ -523,15 +523,19 @@ class _SupportDeskState extends State<_SupportDesk> {
     final rows = _items.reversed.toList();
     final lines = <_ChatLine>[];
     for (final item in rows) {
-      lines.add(_ChatLine(
-        mine: true,
-        text: item.body,
-        unix: item.created,
-        read: item.reply.isNotEmpty,
-        fileName: item.fileName,
-        fileMime: item.fileMime,
-        ticketId: item.id,
-      ));
+      final body = item.body.trim();
+      final hideText = body.isEmpty || body == item.fileName;
+      if (!hideText || item.hasFile) {
+        lines.add(_ChatLine(
+          mine: true,
+          text: hideText ? '' : body,
+          unix: item.created,
+          read: item.reply.isNotEmpty,
+          fileName: item.fileName,
+          fileMime: item.fileMime,
+          ticketId: item.id,
+        ));
+      }
       if (item.reply.isNotEmpty) {
         lines.add(_ChatLine(mine: false, text: item.reply, unix: item.replied, read: false));
       }
@@ -553,7 +557,7 @@ class _SupportDeskState extends State<_SupportDesk> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        if (!quiet || _items.isEmpty) _error = '$e'.replaceFirst('Exception: ', '');
+        if (!quiet || _items.isEmpty) _error = widget.shop.friendlyError(e);
       });
     }
   }
@@ -591,7 +595,7 @@ class _SupportDeskState extends State<_SupportDesk> {
       _pendingName = '';
       await _load();
     } catch (e) {
-      if (mounted) setState(() => _error = '$e'.replaceFirst('Exception: ', ''));
+      if (mounted) setState(() => _error = widget.shop.friendlyError(e));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -646,7 +650,7 @@ class _SupportDeskState extends State<_SupportDesk> {
       if (file == null || !mounted) return;
       _keepFile(file.name, await file.readAsBytes());
     } catch (e) {
-      if (mounted) setState(() => _error = '$e'.replaceFirst('Exception: ', ''));
+      if (mounted) setState(() => _error = widget.shop.friendlyError(e));
     }
   }
 
@@ -672,7 +676,7 @@ class _SupportDeskState extends State<_SupportDesk> {
         setState(() => _error = widget.shop.l10n.pick('На этом устройстве выберите фото.', 'On this device, choose a photo.'));
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '$e'.replaceFirst('Exception: ', ''));
+      if (mounted) setState(() => _error = widget.shop.friendlyError(e));
     }
   }
 

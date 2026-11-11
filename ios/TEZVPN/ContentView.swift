@@ -20,7 +20,7 @@ struct ContentView: View {
 struct Header: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("TEZVPN").font(.largeTitle.weight(.heavy))
+            Text("SULTAN VPN").font(.largeTitle.weight(.heavy))
                 .foregroundStyle(Color(red: 0.96, green: 0.77, blue: 0.09))
             Text("VPN включается в этом приложении сразу после оплаты")
                 .foregroundStyle(Color(red: 0.62, green: 0.69, blue: 0.76))
@@ -61,7 +61,7 @@ struct VpnTab: View {
 
     var statusText: String {
         if store.connecting { return "Подключаем…" }
-        if store.vpn.isOn { return "Интернет идёт через TEZVPN" }
+        if store.vpn.isOn { return "Интернет идёт через SULTAN VPN" }
         if ready { return "Конфиг готов — нажмите, чтобы включить" }
         if store.shop.order?.status == "waiting_review" { return "Чек на проверке. VPN включится сам." }
         return "Купите тариф — VPN подключится сразу после оплаты"

@@ -36,15 +36,31 @@ class _PlayportLogoState extends State<PlayportLogo> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fade,
-      child: const Text(
-        'SULTAN VPN',
-        style: TextStyle(
-          color: Color(0xFF1A1C1E),
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.4,
-          height: 1,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(21),
+            child: Image.asset(
+              'assets/images/sultan_logo.png',
+              width: 96,
+              height: 96,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'SULTAN VPN',
+            style: TextStyle(
+              color: Color(0xFF1A1C1E),
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.4,
+              height: 1,
+            ),
+          ),
+        ],
       ),
     );
   }

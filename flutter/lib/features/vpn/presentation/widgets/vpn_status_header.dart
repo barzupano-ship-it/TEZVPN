@@ -11,24 +11,30 @@ class VpnStatusHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD5E4F7)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              'assets/images/sultan_logo.png',
+              width: 34,
+              height: 34,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
             ),
-            child: const Icon(Icons.shield_outlined, size: 15, color: Color(0xFF1A1C1E)),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Status Connection',
-                  style: TextStyle(color: Color(0xFF6E6A78), fontSize: 11, height: 1.1),
+                  'SULTAN VPN',
+                  style: TextStyle(
+                    color: Color(0xFF6E6A78),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    height: 1.1,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(

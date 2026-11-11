@@ -44,7 +44,7 @@ struct Account {
 }
 
 struct Meta {
-    var title = "TEZVPN"
+    var title = "SULTAN VPN"
     var bot = "teztezvpn_bot"
     var support = "BarzuRizoev"
 }

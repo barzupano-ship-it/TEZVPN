@@ -75,7 +75,7 @@ fun TezAppUi(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Text("TEZVPN", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = gold)
+            Text("SULTAN VPN", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = gold)
             Text("VPN включается в этом приложении сразу после оплаты", color = Color(0xFF9DB0C3))
             Spacer(Modifier.height(12.dp))
             if (ui.loading) {
@@ -154,7 +154,7 @@ private fun VpnScreen(ui: UiState, vm: ShopViewModel, onPower: () -> Unit) {
         Text(
             when {
                 ui.connecting -> "Подключаем…"
-                ui.vpnOn -> "Интернет идёт через TEZVPN"
+                ui.vpnOn -> "Интернет идёт через SULTAN VPN"
                 ready -> "Конфиг готов — нажмите, чтобы включить"
                 order?.status == "waiting_review" -> "Чек на проверке. VPN включится сам."
                 else -> "Купите тариф — VPN подключится сразу после оплаты"

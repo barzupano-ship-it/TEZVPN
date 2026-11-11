@@ -25,9 +25,11 @@ class LegalPlaceholderScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(title, style: const TextStyle(color: Color(0xFF1A1C1E), fontSize: 24, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
-          const Text(
-            'Это заготовка страницы. Полный текст документа ещё не добавлен и не является юридическим документом.',
-            style: TextStyle(color: Color(0xFF5C6166), fontSize: 15, height: 1.4),
+          Text(
+            title.contains('Услов') || title.toLowerCase().contains('term')
+                ? shop.l10n.termsOfUse
+                : shop.l10n.privacyPolicy,
+            style: const TextStyle(color: Color(0xFF5C6166), fontSize: 15, height: 1.45),
           ),
         ],
       ),

@@ -7,7 +7,7 @@ class TezTunnel : Tunnel {
     var state: Tunnel.State = Tunnel.State.DOWN
         private set
 
-    override fun getName(): String = "tezvpn"
+    override fun getName(): String = "SULTANVPN"
 
     override fun onStateChange(newState: Tunnel.State) {
         state = newState

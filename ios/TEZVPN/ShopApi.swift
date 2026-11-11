@@ -80,7 +80,7 @@ final class ShopApi {
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         let obj = (try? JSONSerialization.jsonObject(with: bytes) as? [String: Any]) ?? [:]
         if code >= 400 {
-            throw NSError(domain: "TEZVPN", code: code, userInfo: [
+            throw NSError(domain: "SULTANVPN", code: code, userInfo: [)
                 NSLocalizedDescriptionKey: (obj["error"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Ошибка \(code)"
             ])
         }
@@ -108,7 +108,7 @@ final class ShopApi {
             config: parseConfig(obj["config"] as? [String: Any]),
             account: acc.map { Account(code: $0["code"] as? String ?? "") },
             meta: Meta(
-                title: (meta["title"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "TEZVPN",
+                title: (meta["title"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "SULTAN VPN",
                 bot: (meta["bot"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "teztezvpn_bot",
                 support: (meta["support"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? ShopConfig.support
             ),

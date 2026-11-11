@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'crown_icon.dart';
+
 class VpnConnectionButton extends StatefulWidget {
   const VpnConnectionButton({
     super.key,
@@ -64,10 +66,9 @@ class _VpnConnectionButtonState extends State<VpnConnectionButton> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.power_settings_new_rounded,
-                  color: Colors.white.withValues(alpha: widget.busy ? 0.7 : 1),
+                CrownIcon(
                   size: 28,
+                  color: Colors.white.withValues(alpha: widget.busy ? 0.7 : 1),
                 ),
                 const SizedBox(height: 6),
                 Padding(

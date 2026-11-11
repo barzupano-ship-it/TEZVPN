@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tezvpn/features/vpn/application/tunnel_options.dart';
 import 'package:tezvpn/main.dart';
+import 'package:tezvpn/net_util.dart';
 import 'package:tezvpn/shop_controller.dart';
 
 void main() {
@@ -101,6 +102,7 @@ void main() {
 
     expect(find.text('Кабинет'), findsOneWidget);
     expect(find.text('Войти'), findsOneWidget);
+    expect(find.text('Выйти'), findsNothing);
     expect(find.text('Войти на другом устройстве'), findsOneWidget);
     expect(find.text('Аварийное отключение'), findsOneWidget);
     expect(find.text('Протокол'), findsOneWidget);
@@ -136,6 +138,18 @@ void main() {
     expect(find.text('Tap to connect'), findsOneWidget);
   });
 
+  test('sslip names map to the server IP', () {
+    expect(sslipAddress('188-116-24-47.sslip.io'), '188.116.24.47');
+    expect(shopIpv4FromUrl('https://188-116-24-47.sslip.io'), '188.116.24.47');
+    expect(
+      friendlyNetError(
+        Exception('ClientException with SocketException errno = 10057'),
+        english: false,
+      ),
+      contains('Нет связи с сервером'),
+    );
+  });
+
   test('tunnel options change dns without dropping the key line', () {
     const conf = '[Interface]\nPrivateKey = testkey\nDNS = 8.8.8.8\n\n[Peer]\nPublicKey = peer\n';
     final out = applyTunnelOptions(conf, netShield: true, accelerator: false, excludedApps: {'com.example.app'});
@@ -144,5 +158,13 @@ void main() {
     expect(out.contains('DomainBlockingEnabled = true'), isTrue);
     expect(out.contains('ExcludedApplications = com.example.app'), isTrue);
     expect(out.contains('PublicKey = peer'), isTrue);
+    final tagged = applyTunnelOptions(
+      conf,
+      netShield: false,
+      accelerator: false,
+      excludedApps: {},
+      shopIp: '188.116.24.47',
+    );
+    expect(tagged.contains('# tez-shop-ip: 188.116.24.47'), isTrue);
   });
 }

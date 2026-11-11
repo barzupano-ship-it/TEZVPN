@@ -272,8 +272,13 @@ class _Order extends StatelessWidget {
           ] else if (o.status == 'rejected') ...[
             Text(t.rejected, style: const TextStyle(color: Color(0xFFC62828))),
             FilledButton(onPressed: () => ui.go('home'), child: Text(t.toPlans)),
-          ] else if (o.status == 'disabled')
+          ] else if (o.status == 'disabled') ...[
             Text(t.disabled, style: const TextStyle(color: Color(0xFFC62828))),
+          ] else if (o.status == 'expired') ...[
+            Text(t.subscriptionExpired, style: const TextStyle(color: Color(0xFFC62828))),
+            const SizedBox(height: 8),
+            FilledButton(onPressed: () => ui.go('home'), child: Text(t.toPlans)),
+          ],
         ],
       ],
     );
@@ -358,6 +363,8 @@ class _Account extends StatelessWidget {
         if (login.isNotEmpty) ...[
           Text(login.startsWith('tg:') ? t.signedInAs('Telegram') : t.signedInAs(login), style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
+          OutlinedButton(onPressed: ui.busy ? null : ui.logout, child: Text(t.logout)),
+          const SizedBox(height: 16),
         ] else ...[
           Text(t.registerTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),

@@ -8,20 +8,25 @@
 #include <netioapi.h>
 #include <iphlpapi.h>
 
+#include <cctype>
 #include <string>
 
 namespace {
 
-constexpr wchar_t kTunnelName[] = L"TEZVPN";
-constexpr wchar_t kServiceName[] = L"AmneziaWGTunnel$TEZVPN";
+constexpr wchar_t kTunnelName[] = L"SULTAN VPN";
+constexpr wchar_t kCompactTunnelName[] = L"SULTANVPN";
+constexpr wchar_t kLegacyTunnelName[] = L"TEZVPN";
+constexpr wchar_t kServiceName[] = L"AmneziaWGTunnel$SULTAN VPN";
+constexpr wchar_t kCompactServiceName[] = L"AmneziaWGTunnel$SULTANVPN";
+constexpr wchar_t kLegacyServiceName[] = L"AmneziaWGTunnel$TEZVPN";
 
 std::wstring ProgramDataDir() {
   wchar_t buf[MAX_PATH];
   DWORD n = GetEnvironmentVariableW(L"ProgramData", buf, MAX_PATH);
   if (n == 0 || n >= MAX_PATH) {
-    return L"C:\\ProgramData\\TEZVPN";
+    return L"C:\\ProgramData\\SULTANVPN";
   }
-  return std::wstring(buf) + L"\\TEZVPN";
+  return std::wstring(buf) + L"\\SULTANVPN";
 }
 
 std::wstring ResultPath() { return ProgramDataDir() + L"\\result.txt"; }
@@ -177,12 +182,12 @@ std::wstring EngineExe(const std::wstring& engine_dir) {
   return engine_dir + L"\\amneziawg.exe";
 }
 
-bool TunnelServiceExists() {
+bool NamedServiceExists(const wchar_t* name) {
   SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
   if (!scm) {
     return false;
   }
-  SC_HANDLE svc = OpenServiceW(scm, kServiceName, SERVICE_QUERY_STATUS);
+  SC_HANDLE svc = OpenServiceW(scm, name, SERVICE_QUERY_STATUS);
   const bool exists = svc != nullptr;
   if (svc) {
     CloseServiceHandle(svc);
@@ -191,12 +196,17 @@ bool TunnelServiceExists() {
   return exists;
 }
 
-bool StopTunnelService() {
+bool TunnelServiceExists() {
+  return NamedServiceExists(kServiceName) || NamedServiceExists(kCompactServiceName) ||
+         NamedServiceExists(kLegacyServiceName);
+}
+
+bool StopNamedTunnelService(const wchar_t* name) {
   SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
   if (!scm) {
     return false;
   }
-  SC_HANDLE svc = OpenServiceW(scm, kServiceName, SERVICE_STOP | SERVICE_QUERY_STATUS);
+  SC_HANDLE svc = OpenServiceW(scm, name, SERVICE_STOP | SERVICE_QUERY_STATUS);
   if (!svc) {
     const DWORD missing = GetLastError();
     CloseServiceHandle(scm);
@@ -230,6 +240,43 @@ bool StopTunnelService() {
   return stopped;
 }
 
+bool StopTunnelService() {
+  bool ok = StopNamedTunnelService(kServiceName) &&
+            StopNamedTunnelService(kCompactServiceName) &&
+            StopNamedTunnelService(kLegacyServiceName);
+  wchar_t numbered[80];
+  for (int i = 2; i <= 9; ++i) {
+    wsprintfW(numbered, L"AmneziaWGTunnel$TEZVPN %d", i);
+    ok = StopNamedTunnelService(numbered) && ok;
+    wsprintfW(numbered, L"AmneziaWGTunnel$SULTAN VPN %d", i);
+    ok = StopNamedTunnelService(numbered) && ok;
+    wsprintfW(numbered, L"AmneziaWGTunnel$SULTANVPN %d", i);
+    ok = StopNamedTunnelService(numbered) && ok;
+  }
+  return ok;
+}
+
+void UninstallNamedTunnel(const std::wstring& engine_dir, const wchar_t* name) {
+  const std::wstring uninstall =
+      L"\"" + EngineExe(engine_dir) + L"\" /uninstalltunnelservice \"" + name + L"\"";
+  RunHidden(uninstall, engine_dir);
+}
+
+void UninstallKnownTunnels(const std::wstring& engine_dir) {
+  UninstallNamedTunnel(engine_dir, kTunnelName);
+  UninstallNamedTunnel(engine_dir, kCompactTunnelName);
+  UninstallNamedTunnel(engine_dir, kLegacyTunnelName);
+  wchar_t numbered[64];
+  for (int i = 2; i <= 9; ++i) {
+    wsprintfW(numbered, L"TEZVPN %d", i);
+    UninstallNamedTunnel(engine_dir, numbered);
+    wsprintfW(numbered, L"SULTAN VPN %d", i);
+    UninstallNamedTunnel(engine_dir, numbered);
+    wsprintfW(numbered, L"SULTANVPN %d", i);
+    UninstallNamedTunnel(engine_dir, numbered);
+  }
+}
+
 bool ProcessRunning(const wchar_t* name) {
   HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (snap == INVALID_HANDLE_VALUE) {
@@ -256,6 +303,106 @@ void KillStack() {
   }
   RunHidden(L"C:\\Windows\\System32\\taskkill.exe /F /IM sing-box.exe", L"");
   Sleep(400);
+}
+
+bool BadTunName(const std::wstring& name);
+std::string ReadWhole(const std::wstring& path);
+
+bool ParseShopIp(const std::string& conf, in_addr* out) {
+  std::string ip = "188.116.24.47";
+  const std::string key = "# tez-shop-ip:";
+  auto pos = conf.find(key);
+  if (pos != std::string::npos) {
+    pos += key.size();
+    while (pos < conf.size() && (conf[pos] == ' ' || conf[pos] == '\t')) {
+      ++pos;
+    }
+    auto end = pos;
+    while (end < conf.size() && (isdigit(static_cast<unsigned char>(conf[end])) || conf[end] == '.')) {
+      ++end;
+    }
+    if (end > pos) {
+      ip = conf.substr(pos, end - pos);
+    }
+  }
+  ZeroMemory(out, sizeof(*out));
+  if (inet_pton(AF_INET, ip.c_str(), out) != 1) {
+    return false;
+  }
+  return out->S_un.S_addr != 0;
+}
+
+bool PhysicalDefault(MIB_IPFORWARD_ROW2* out) {
+  PMIB_IPFORWARD_TABLE2 table = nullptr;
+  if (GetIpForwardTable2(AF_INET, &table) != NO_ERROR || table == nullptr) {
+    return false;
+  }
+  const MIB_IPFORWARD_ROW2* best = nullptr;
+  for (ULONG i = 0; i < table->NumEntries; ++i) {
+    const MIB_IPFORWARD_ROW2& row = table->Table[i];
+    if (row.DestinationPrefix.Prefix.si_family != AF_INET) continue;
+    if (row.DestinationPrefix.PrefixLength != 0) continue;
+    WCHAR alias[IF_MAX_STRING_SIZE + 1];
+    if (ConvertInterfaceLuidToAlias(const_cast<NET_LUID*>(&row.InterfaceLuid), alias,
+                                    IF_MAX_STRING_SIZE + 1) != NO_ERROR) {
+      continue;
+    }
+    if (BadTunName(alias)) continue;
+    const bool hop = row.NextHop.Ipv4.sin_addr.S_un.S_addr != 0;
+    const bool best_hop = best != nullptr && best->NextHop.Ipv4.sin_addr.S_un.S_addr != 0;
+    if (best == nullptr || (hop && !best_hop) || (hop == best_hop && row.Metric < best->Metric)) {
+      best = &row;
+    }
+  }
+  const bool ok = best != nullptr;
+  if (ok) {
+    *out = *best;
+  }
+  FreeMibTable(table);
+  return ok;
+}
+
+void ApplyShopBypass(bool enable, const std::wstring& conf_path) {
+  in_addr ip;
+  ZeroMemory(&ip, sizeof(ip));
+  if (enable) {
+    if (!ParseShopIp(ReadWhole(conf_path), &ip)) {
+      return;
+    }
+    WriteUtf8(ProgramDataDir() + L"\\shop_ip.txt",
+              std::to_string((ip.S_un.S_un_b.s_b1)) + "." +
+                  std::to_string(ip.S_un.S_un_b.s_b2) + "." +
+                  std::to_string(ip.S_un.S_un_b.s_b3) + "." +
+                  std::to_string(ip.S_un.S_un_b.s_b4));
+  } else {
+    const std::string saved = ReadWhole(ProgramDataDir() + L"\\shop_ip.txt");
+    if (!ParseShopIp(std::string("# tez-shop-ip: ") + saved, &ip)) {
+      return;
+    }
+  }
+  MIB_IPFORWARD_ROW2 phy;
+  ZeroMemory(&phy, sizeof(phy));
+  if (!PhysicalDefault(&phy)) {
+    return;
+  }
+  MIB_IPFORWARD_ROW2 row;
+  InitializeIpForwardEntry(&row);
+  row.DestinationPrefix.PrefixLength = 32;
+  row.DestinationPrefix.Prefix.si_family = AF_INET;
+  row.DestinationPrefix.Prefix.Ipv4.sin_family = AF_INET;
+  row.DestinationPrefix.Prefix.Ipv4.sin_addr = ip;
+  row.NextHop.si_family = AF_INET;
+  row.NextHop.Ipv4.sin_family = AF_INET;
+  row.NextHop.Ipv4.sin_addr = phy.NextHop.Ipv4.sin_addr;
+  row.InterfaceLuid = phy.InterfaceLuid;
+  row.InterfaceIndex = phy.InterfaceIndex;
+  row.Metric = 1;
+  row.Protocol = MIB_IPPROTO_NETMGMT;
+  row.Origin = NlroManual;
+  DeleteIpForwardEntry2(&row);
+  // Do not re-add the physical /32 route: AmneziaWG's WFP kill-switch blocks
+  // non-tunnel egress, so routing the shop/panel IP out WLAN causes
+  // ERR_NETWORK_ACCESS_DENIED while VPN is connected.
 }
 
 void WriteProto(const char* proto) {
@@ -318,6 +465,7 @@ bool BadTunName(const std::wstring& name) {
     ch = static_cast<wchar_t>(towlower(ch));
   }
   return lower.find(L"tez") != std::wstring::npos ||
+         lower.find(L"sultan") != std::wstring::npos ||
          lower.find(L"wintun") != std::wstring::npos ||
          lower.find(L"sing-box") != std::wstring::npos ||
          lower.find(L"loopback") != std::wstring::npos;
@@ -441,8 +589,6 @@ bool StartStack(const std::wstring& engine, const std::wstring& config) {
 
 int InstallFromEngine(const std::wstring& engine_dir, const std::wstring& conf) {
   const std::wstring exe = EngineExe(engine_dir);
-  const std::wstring uninstall =
-      L"\"" + exe + L"\" /uninstalltunnelservice " + kTunnelName;
   // Stop first. amneziawg.exe shows "Tunnel already installed and running"
   // and refuses to install over a service that is still started.
   for (int attempt = 0; attempt < 6; ++attempt) {
@@ -450,7 +596,7 @@ int InstallFromEngine(const std::wstring& engine_dir, const std::wstring& conf) 
     if (!TunnelServiceExists()) {
       break;
     }
-    RunHidden(uninstall, engine_dir);
+    UninstallKnownTunnels(engine_dir);
     Sleep(400);
   }
   const std::wstring install =
@@ -458,7 +604,7 @@ int InstallFromEngine(const std::wstring& engine_dir, const std::wstring& conf) 
   DWORD code = RunHidden(install, engine_dir);
   if (code != 0) {
     StopTunnelService();
-    RunHidden(uninstall, engine_dir);
+    UninstallKnownTunnels(engine_dir);
     Sleep(600);
     code = RunHidden(install, engine_dir);
   }
@@ -466,13 +612,14 @@ int InstallFromEngine(const std::wstring& engine_dir, const std::wstring& conf) 
     return static_cast<int>(code);
   }
   RenameService();
+  ApplyShopBypass(true, conf);
   return 0;
 }
 
 std::string Elevate(const std::wstring& params) {
   const std::wstring exe = ExePath();
   if (exe.empty()) {
-    return "Не удалось найти TEZVPN.exe";
+    return "Не удалось найти SULTAN VPN";
   }
   EnsureDir(ProgramDataDir());
   DeleteFileW(ResultPath().c_str());
@@ -534,9 +681,7 @@ int TezStartStack(const wchar_t* config_path, const wchar_t* protocol) {
   }
   StopTunnelService();
   if (TunnelServiceExists()) {
-    const std::wstring uninstall =
-        L"\"" + EngineExe(engine) + L"\" /uninstalltunnelservice " + kTunnelName;
-    RunHidden(uninstall, engine);
+    UninstallKnownTunnels(engine);
     Sleep(400);
   }
   if (!StartStack(engine, config_path)) {
@@ -554,6 +699,9 @@ int TezStartStack(const wchar_t* config_path, const wchar_t* protocol) {
 }
 
 int TezRemoveTunnel() {
+  ApplyShopBypass(false, ProgramDataDir() + L"\\SULTAN VPN.conf");
+  ApplyShopBypass(false, ProgramDataDir() + L"\\SULTANVPN.conf");
+  ApplyShopBypass(false, ProgramDataDir() + L"\\TEZVPN.conf");
   KillStack();
   StopTunnelService();
   if (!TunnelServiceExists()) {
@@ -562,10 +710,8 @@ int TezRemoveTunnel() {
     return 0;
   }
   const std::wstring engine = ProgramDataDir() + L"\\engine";
-  const std::wstring exe = EngineExe(engine);
-  const std::wstring command =
-      L"\"" + exe + L"\" /uninstalltunnelservice " + kTunnelName;
-  const DWORD code = RunHidden(command, engine);
+  UninstallKnownTunnels(engine);
+  const DWORD code = TunnelServiceExists() ? 1 : 0;
   if (code != 0 && TunnelServiceExists()) {
     WriteResult("Не удалось выключить SULTAN VPN");
     return static_cast<int>(code);
@@ -583,7 +729,7 @@ std::string TezVpnConnect(const std::string& conf) {
   if (!EnsureDir(dir)) {
     return "Не удалось подготовить SULTAN VPN";
   }
-  const std::wstring conf_path = dir + L"\\TEZVPN.conf";
+  const std::wstring conf_path = dir + L"\\SULTAN VPN.conf";
   if (!WriteUtf8(conf_path, conf)) {
     return "Не удалось сохранить конфигурацию SULTAN VPN";
   }
@@ -622,16 +768,12 @@ std::string TezVpnDisconnect() {
   return Elevate(L"--remove-tunnel");
 }
 
-bool TezVpnIsUp() {
-  const std::string proto = ReadProto();
-  if (proto == "off" || proto == "xray" || proto == "hy2") {
-    return false;
-  }
+bool ServiceRunning(const wchar_t* name) {
   SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
   if (!scm) {
     return false;
   }
-  SC_HANDLE svc = OpenServiceW(scm, kServiceName, SERVICE_QUERY_STATUS);
+  SC_HANDLE svc = OpenServiceW(scm, name, SERVICE_QUERY_STATUS);
   if (!svc) {
     CloseServiceHandle(scm);
     return false;
@@ -642,6 +784,15 @@ bool TezVpnIsUp() {
   CloseServiceHandle(svc);
   CloseServiceHandle(scm);
   return ok && status.dwCurrentState == SERVICE_RUNNING;
+}
+
+bool TezVpnIsUp() {
+  const std::string proto = ReadProto();
+  if (proto == "off" || proto == "xray" || proto == "hy2") {
+    return false;
+  }
+  return ServiceRunning(kServiceName) || ServiceRunning(kCompactServiceName) ||
+         ServiceRunning(kLegacyServiceName);
 }
 
 void TezVpnTraffic(unsigned long long* upload, unsigned long long* download) {
@@ -656,7 +807,9 @@ void TezVpnTraffic(unsigned long long* upload, unsigned long long* download) {
   bool exact = false;
   for (ULONG i = 0; i < table->NumEntries; ++i) {
     const MIB_IF_ROW2& row = table->Table[i];
-    const bool named = wcsstr(row.Alias, L"TEZVPN") != nullptr;
+    const bool named = wcsstr(row.Alias, L"SULTANVPN") != nullptr ||
+                      wcsstr(row.Alias, L"SULTAN VPN") != nullptr ||
+                      wcsstr(row.Alias, L"TEZVPN") != nullptr;
     const bool tunnel = wcsstr(row.Description, L"Amnezia") != nullptr ||
                         wcsstr(row.Description, L"Wintun") != nullptr;
     if (!named && !tunnel) {

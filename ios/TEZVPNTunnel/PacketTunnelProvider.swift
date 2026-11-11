@@ -4,7 +4,7 @@ import WireGuardKit
 final class PacketTunnelProvider: NEPacketTunnelProvider {
     private lazy var adapter: WireGuardAdapter = {
         WireGuardAdapter(with: self) { _, message in
-            NSLog("TEZVPN tunnel: %@", message)
+            NSLog("SULTAN VPN tunnel: %@", message)
         }
     }()
 
@@ -13,13 +13,13 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             let proto = protocolConfiguration as? NETunnelProviderProtocol,
             let conf = proto.providerConfiguration?["wg-quick"] as? String
         else {
-            completionHandler(NSError(domain: "TEZVPN", code: 1, userInfo: [
+            completionHandler(NSError(domain: "SULTANVPN", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Нет конфига VPN"
             ]))
             return
         }
         do {
-            let tunnel = try TunnelConfiguration(fromWgQuickConfig: conf, called: "TEZVPN")
+            let tunnel = try TunnelConfiguration(fromWgQuickConfig: conf, called: "SULTAN VPN")
             adapter.start(tunnelConfiguration: tunnel) { error in
                 completionHandler(error)
             }

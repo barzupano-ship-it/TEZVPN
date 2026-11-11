@@ -99,7 +99,7 @@ open ios/Runner.xcworkspace
 flutter build windows --release
 ```
 
-Готовый установщик собирается скриптом `downloads/TEZVPN.nsi` через NSIS. Имя программы SULTAN VPN, файл установки `TEZVPN-Setup.exe`.
+Готовый установщик собирается скриптом `downloads/TEZVPN.nsi` через NSIS. Имя программы SULTAN VPN, файл установки `SULTANVPN-Setup.exe`.
 
 ## Mac с сайта
 

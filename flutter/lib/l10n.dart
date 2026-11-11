@@ -54,6 +54,10 @@ class L10n {
   String get openVpn => pick('Открыть VPN', 'Open VPN');
   String get rejected => pick('Чек отклонён. Выберите тариф заново.', 'Receipt declined. Choose a plan again.');
   String get disabled => pick('Доступ отключён администратором.', 'Access was disabled by the admin.');
+  String get subscriptionExpired => pick(
+        'Срок подписки закончился. Купите тариф, чтобы снова включить VPN.',
+        'Your subscription has ended. Buy a plan to turn VPN on again.',
+      );
   String get pay => pick('Оплата', 'Payment');
   String get payee => pick('Получатель', 'Payee');
   String get loadingPay => pick('Реквизиты загружаются…', 'Loading payment details…');
@@ -190,6 +194,7 @@ class L10n {
   String get settingsHelp => pick('Помощь и поддержка', 'Help and support');
   String get settingsPrivacy => pick('Конфиденциальность', 'Privacy');
   String get settingsPhone => pick('Телефон', 'Phone');
+  String get logout => pick('Выйти', 'Log out');
   String get proRequired => pick(
         'Нужен тариф Premium или VIP.',
         'This feature requires a Premium or VIP subscription.',
@@ -233,9 +238,14 @@ class L10n {
         'AmneziaWG — единственный протокол в этом VPN.',
         'AmneziaWG is the only protocol in this VPN engine.',
       );
-  String get privacyDraft => pick(
-        'Это черновик. Текст ещё не является документом о конфиденциальности.',
-        'This page is a draft. It is not a finished privacy document.',
+  String get privacyDraft => privacyPolicy;
+  String get privacyPolicy => pick(
+        'SULTAN VPN обрабатывает данные, нужные для кабинета и VPN: логин, статус подписки, слоты устройств, сообщения в поддержку и фото чека, если вы его загружаете. Конфиг VPN выдаётся только после оплаты. Мы не продаём эти данные и не используем их для рекламы. Трафик в туннеле шифруется протоколом AmneziaWG. Вопросы: Telegram поддержки в приложении.',
+        'SULTAN VPN processes data needed for the account and VPN: login, subscription status, device slots, support messages, and a receipt photo if you upload one. A VPN config is issued only after payment. We do not sell this data or use it for ads. Tunnel traffic is encrypted with AmneziaWG. Contact: in-app Telegram support.',
+      );
+  String get termsOfUse => pick(
+        'SULTAN VPN — платный сервис. VPN работает, пока активна оплаченная подписка. После окончания срока туннель отключается до новой оплаты. Сервис не обещает обход любых блокировок и не несёт ответственность за использование сети в нарушение закона вашей страны. Оплата и возврат — по правилам магазина в приложении.',
+        'SULTAN VPN is a paid service. VPN works while a paid subscription is active. When it expires the tunnel stops until you pay again. The service does not promise to bypass every block and is not responsible for unlawful use. Payment and refunds follow the in-app shop rules.',
       );
   String get protocolActive => pick(
         'Переподключите VPN, чтобы продолжить с AmneziaWG.',

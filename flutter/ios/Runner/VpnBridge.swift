@@ -8,7 +8,7 @@ final class VpnBridge {
     func connect(conf: String) async throws {
         let trimmed = conf.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            throw NSError(domain: "TEZVPN", code: 1, userInfo: [
+            throw NSError(domain: "SULTANVPN", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Нет конфига VPN"
             ])
         }
@@ -16,10 +16,10 @@ final class VpnBridge {
         let mgr = all.first ?? NETunnelProviderManager()
         let proto = NETunnelProviderProtocol()
         proto.providerBundleIdentifier = Self.tunnelId
-        proto.serverAddress = "TEZVPN"
+        proto.serverAddress = "SULTAN VPN"
         proto.providerConfiguration = ["wg-quick": trimmed]
         mgr.protocolConfiguration = proto
-        mgr.localizedDescription = "TEZVPN"
+        mgr.localizedDescription = "SULTAN VPN"
         mgr.isEnabled = true
         mgr.isOnDemandEnabled = false
         try await mgr.saveToPreferences()

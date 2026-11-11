@@ -54,7 +54,14 @@ class ShopApi {
   ShopApi(this._prefs);
 
   final SharedPreferences _prefs;
-  final _client = http.Client();
+  http.Client _client = http.Client();
+
+  void refreshTransport() {
+    try {
+      _client.close();
+    } catch (_) {}
+    _client = http.Client();
+  }
   String protocol = 'awg';
 
   String get deviceFp {
@@ -80,6 +87,13 @@ class ShopApi {
       h['Cookie'] = 'tezweb=$cookie';
     }
     return h;
+  }
+
+  Future<void> clearSession() async {
+    try {
+      await _request('/api/logout', method: 'POST', jsonBody: {});
+    } catch (_) {}
+    await _prefs.remove('cookie_value');
   }
 
   void _saveCookies(http.BaseResponse resp) {
@@ -118,13 +132,16 @@ class ShopApi {
       } catch (e) {
         attempt++;
         final text = e.toString();
-        final again = attempt < 2 &&
+        final again = attempt < 4 &&
             (text.contains('SocketException') ||
                 text.contains('ClientException') ||
                 text.contains('HandshakeException') ||
-                text.contains('10057'));
+                text.contains('10057') ||
+                text.contains('Connection closed') ||
+                text.contains('Connection reset'));
         if (!again) rethrow;
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        refreshTransport();
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
       }
     }
     _saveCookies(resp);
@@ -208,13 +225,33 @@ class ShopApi {
 
   Future<void> sendSupportFile(List<int> bytes, String filename, String text) async {
     final uri = Uri.parse('${ShopConfig.shopUrl}/api/support/file');
-    final req = http.MultipartRequest('POST', uri);
-    req.headers.addAll(_headers);
-    final caption = text.trim();
-    if (caption.isNotEmpty) req.fields['text'] = caption;
-    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
-    final streamed = await _client.send(req);
-    final resp = await http.Response.fromStream(streamed);
+    late http.Response resp;
+    var attempt = 0;
+    while (true) {
+      try {
+        final req = http.MultipartRequest('POST', uri);
+        req.headers.addAll(_headers);
+        final caption = text.trim();
+        if (caption.isNotEmpty) req.fields['text'] = caption;
+        req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+        final streamed = await _client.send(req);
+        resp = await http.Response.fromStream(streamed);
+        break;
+      } catch (e) {
+        attempt++;
+        final err = e.toString();
+        final again = attempt < 4 &&
+            (err.contains('SocketException') ||
+                err.contains('ClientException') ||
+                err.contains('HandshakeException') ||
+                err.contains('10057') ||
+                err.contains('Connection closed') ||
+                err.contains('Connection reset'));
+        if (!again) rethrow;
+        refreshTransport();
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+      }
+    }
     _saveCookies(resp);
     Map<String, dynamic> obj = {};
     if (resp.body.startsWith('{')) {
@@ -312,7 +349,7 @@ class ShopApi {
               login: '${acc['login'] ?? ''}',
             ),
       meta: Meta(
-        title: (meta['title'] as String?)?.isNotEmpty == true ? meta['title'] as String : ShopConfig.appName,
+        title: _brandTitle(meta['title']),
         bot: (meta['bot'] as String?)?.isNotEmpty == true ? meta['bot'] as String : 'teztezvpn_bot',
         support: (meta['support'] as String?)?.isNotEmpty == true
             ? meta['support'] as String
@@ -320,6 +357,19 @@ class ShopApi {
       ),
       flash: (obj['flash'] as String?)?.isEmpty == true ? null : obj['flash'] as String?,
     );
+  }
+
+  static String _brandTitle(Object? raw) {
+    final value = (raw ?? '').toString().trim();
+    if (value.isEmpty) return ShopConfig.appName;
+    switch (value.toLowerCase()) {
+      case 'tezvpn':
+      case 'tez vpn':
+      case 'tez':
+        return ShopConfig.appName;
+      default:
+        return value;
+    }
   }
 
   static Plan? _plan(Map<String, dynamic> o) {
@@ -347,7 +397,7 @@ class ShopApi {
       status: st,
       statusLabel: '${o['status_label'] ?? st}',
       name: '${o['name'] ?? ''}',
-      ready: o['ready'] == true || st == 'fulfilled',
+      ready: o['ready'] == true,
     );
   }
 

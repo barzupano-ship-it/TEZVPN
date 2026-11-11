@@ -207,7 +207,7 @@ class ShopApi(context: Context) {
         private fun JSONObject?.toMeta(): Meta {
             if (this == null) return Meta()
             return Meta(
-                title = optString("title").ifBlank { "TEZVPN" },
+                title = optString("title").ifBlank { "SULTAN VPN" },
                 bot = optString("bot").ifBlank { "teztezvpn_bot" },
                 support = optString("support").ifBlank { "BarzuRizoev" },
             )

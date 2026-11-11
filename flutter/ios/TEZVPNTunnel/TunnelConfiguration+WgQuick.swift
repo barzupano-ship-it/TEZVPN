@@ -20,7 +20,7 @@ extension TunnelConfiguration {
     private static func parse(_ raw: String) throws -> InterfaceConfiguration {
         let iface = section(raw, name: "Interface")
         guard let pk = attr(iface, "PrivateKey").flatMap({ PrivateKey(base64Key: $0) }) else {
-            throw NSError(domain: "TEZVPN", code: 2, userInfo: [NSLocalizedDescriptionKey: "Нет PrivateKey"])
+            throw NSError(domain: "SULTANVPN", code: 2, userInfo: [NSLocalizedDescriptionKey: "Нет PrivateKey"])
         }
         var cfg = InterfaceConfiguration(privateKey: pk)
         if let a = attr(iface, "Address") {

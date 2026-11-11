@@ -39,6 +39,12 @@ class VpnSettingsScreen extends StatelessWidget {
             title: t.settingsOtherDevice,
             onTap: () => shop.go('device-signin'),
           ),
+          if (!account.guest)
+            VpnSettingsTile(
+              icon: const SettingsIcon(icon: Icons.logout_rounded, color: Color(0xFFC62828)),
+              title: t.logout,
+              onTap: shop.logout,
+            ),
           const SizedBox(height: 10),
           _SectionLabel(t.settingsFeatures),
           VpnSettingsTile(

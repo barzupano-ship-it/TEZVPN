@@ -13,7 +13,7 @@ class SubscriptionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final period = shop.billingPeriod;
-    final currentProduct = shop.shop.order?.status == 'fulfilled' ? (shop.shop.order?.plan ?? '') : '';
+    final currentProduct = shop.hasPaidAccess ? (shop.shop.order?.plan ?? '') : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

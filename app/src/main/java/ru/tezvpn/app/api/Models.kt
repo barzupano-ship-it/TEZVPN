@@ -45,7 +45,7 @@ data class Account(
 )
 
 data class Meta(
-    val title: String = "TEZVPN",
+    val title: String = "SULTAN VPN",
     val bot: String = "teztezvpn_bot",
     val support: String = "BarzuRizoev",
 )

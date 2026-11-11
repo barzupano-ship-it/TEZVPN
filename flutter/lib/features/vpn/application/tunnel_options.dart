@@ -5,8 +5,13 @@ String applyTunnelOptions(
   required bool netShield,
   required bool accelerator,
   required Set<String> excludedApps,
+  String? shopIp,
 }) {
   var text = conf.replaceAll('\r\n', '\n');
+  final ip = (shopIp ?? '').trim();
+  if (ip.isNotEmpty && !text.contains('# tez-shop-ip:')) {
+    text = text.replaceFirst('[Interface]', '[Interface]\n# tez-shop-ip: $ip');
+  }
   if (netShield) {
     text = _upsertInterface(text, 'DNS', '94.140.14.14, 94.140.15.15');
     text = _upsertInterface(text, 'DomainBlockingEnabled', 'true');

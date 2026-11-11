@@ -10,10 +10,10 @@ final class VpnBridge {
         let mgr = all.first ?? NETunnelProviderManager()
         let proto = NETunnelProviderProtocol()
         proto.providerBundleIdentifier = Self.tunnelId
-        proto.serverAddress = "TEZVPN"
+        proto.serverAddress = "SULTAN VPN"
         proto.providerConfiguration = ["wg-quick": conf]
         mgr.protocolConfiguration = proto
-        mgr.localizedDescription = "TEZVPN"
+        mgr.localizedDescription = "SULTAN VPN"
         mgr.isEnabled = true
         mgr.isOnDemandEnabled = false
         try await mgr.saveToPreferences()

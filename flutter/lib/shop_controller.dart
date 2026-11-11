@@ -6,12 +6,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'config.dart';
 import 'features/vpn/application/subscription_pricing.dart';
-import 'models.dart';
-import 'shop_api.dart';
 import 'features/vpn/application/tunnel_options.dart';
-import 'vpn_channel.dart';
 import 'l10n.dart';
+import 'models.dart';
+import 'net_util.dart';
+import 'shop_api.dart';
+import 'vpn_channel.dart';
 
 class ShopController extends ChangeNotifier {
   ShopApi? _api;
@@ -44,6 +46,7 @@ class ShopController extends ChangeNotifier {
   bool _polling = false;
   bool _watching = false;
   bool _userOff = false;
+  bool _switching = false;
   String? _armedOid;
   String? _savedConf;
   String protocol = 'awg';
@@ -54,8 +57,11 @@ class ShopController extends ChangeNotifier {
   String? _seenStatus;
   Timer? _tick;
 
-  Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
+  ShopController({SharedPreferences? prefs}) {
+    if (prefs != null) _restoreSession(prefs);
+  }
+
+  void _restoreSession(SharedPreferences prefs) {
     l10n = L10n(prefs.getString('lang') == 'en' ? 'en' : 'ru');
     _savedConf = prefs.getString('vpn_conf');
     protocol = 'awg';
@@ -65,8 +71,19 @@ class ShopController extends ChangeNotifier {
     excludedApps
       ..clear()
       ..addAll((prefs.getString('opt_excluded') ?? '').split(',').where((item) => item.isNotEmpty));
+    final cookie = prefs.getString('cookie_value') ?? '';
+    if (cookie.isNotEmpty || (_savedConf != null && _savedConf!.isNotEmpty)) {
+      screen = (_savedConf != null && _savedConf!.isNotEmpty) ? 'vpn' : 'home';
+      loading = false;
+    }
+  }
+
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _restoreSession(prefs);
     await prefs.remove('vpn_proto');
     _api = ShopApi(prefs)..protocol = 'awg';
+    notifyListeners();
     _armWatch();
     await _prepareVpn();
     await refresh();
@@ -351,8 +368,80 @@ class ShopController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> logout() async {
+    busy = true;
+    error = null;
+    message = null;
+    notifyListeners();
+    try {
+      if (vpnOn || await vpn.isUp()) {
+        await vpn.disconnect();
+      }
+    } catch (_) {}
+    vpnOn = false;
+    connecting = false;
+    disconnecting = false;
+    _savedConf = null;
+    _armedOid = null;
+    _userOff = false;
+    _seenStatus = null;
+    try {
+      if (_api != null) await _api!.clearSession();
+    } catch (_) {}
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cookie_value');
+      await prefs.remove('vpn_conf');
+      await prefs.remove('vpn_oid');
+    } catch (_) {}
+    shop = const ShopState();
+    busy = false;
+    loading = false;
+    screen = 'welcome';
+    registrationOpen = false;
+    notifyListeners();
+  }
+
+  bool get hasPaidAccess {
+    final orders = <Order>[
+      if (shop.order != null) shop.order!,
+      ...shop.orders,
+    ];
+    return orders.any((order) => order.ready);
+  }
+
+  bool get _knownExpired {
+    final st = shop.order?.status ?? '';
+    if (st == 'expired' || st == 'disabled') return true;
+    if ((shop.order != null || shop.orders.isNotEmpty) && !hasPaidAccess) {
+      return st.isEmpty || st == 'expired' || st == 'disabled' || st == 'fulfilled';
+    }
+    return false;
+  }
+
+  Future<void> _cutExpiredVpn() async {
+    try {
+      if (vpnOn || await vpn.isUp()) {
+        await vpn.disconnect();
+        _api?.refreshTransport();
+      }
+    } catch (_) {}
+    vpnOn = false;
+    connecting = false;
+    _savedConf = null;
+    shop = shop.copyWith(config: const VpnConfig());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('vpn_conf');
+      await prefs.remove('vpn_oid');
+    } catch (_) {}
+    if (message != l10n.subscriptionExpired) {
+      message = l10n.subscriptionExpired;
+    }
+  }
+
   bool get hasProAccess {
-    bool paid(Order order) => order.status == 'fulfilled' || order.ready;
+    bool paid(Order order) => order.ready;
     bool pro(Order order) {
       final id = order.plan.toLowerCase();
       final title = order.title.toLowerCase();
@@ -478,12 +567,8 @@ class ShopController extends ChangeNotifier {
     try {
       await vpn.disconnect();
       await vpn.setKillSwitch(killSwitchOn);
-      await vpn.connect(applyTunnelOptions(
-        conf,
-        netShield: netShield,
-        accelerator: vpnAccelerator,
-        excludedApps: excludedApps,
-      ));
+      await vpn.connect(_tun(conf));
+      _api?.refreshTransport();
       vpnOn = true;
       message = l10n.vpnEnabled;
     } catch (e) {
@@ -568,13 +653,28 @@ class ShopController extends ChangeNotifier {
     final conf = _confFor();
     try {
       if (await vpn.isUp()) {
+        if (_knownExpired) {
+          await _cutExpiredVpn();
+          error = l10n.subscriptionExpired;
+          screen = 'home';
+          notifyListeners();
+          return;
+        }
         disconnecting = true;
         notifyListeners();
         await vpn.disconnect();
+        _api?.refreshTransport();
         vpnOn = false;
         disconnecting = false;
         _userOff = true;
         message = l10n.vpnOff;
+        notifyListeners();
+        return;
+      }
+      if (_knownExpired) {
+        await _cutExpiredVpn();
+        error = l10n.subscriptionExpired;
+        screen = 'home';
         notifyListeners();
         return;
       }
@@ -598,12 +698,8 @@ class ShopController extends ChangeNotifier {
       try {
         await vpn.setKillSwitch(killSwitchOn);
       } catch (_) {}
-      await vpn.connect(applyTunnelOptions(
-        payload,
-        netShield: netShield,
-        accelerator: vpnAccelerator,
-        excludedApps: excludedApps,
-      ));
+      await vpn.connect(_tun(payload));
+      _api?.refreshTransport();
       await _rememberConf(payload, shop.order?.id);
       connecting = false;
       vpnOn = true;
@@ -648,16 +744,50 @@ class ShopController extends ChangeNotifier {
     }
   }
 
+  String _endpointOf(String conf) {
+    for (final line in conf.split('\n')) {
+      final item = line.trim();
+      if (item.toLowerCase().startsWith('endpoint')) {
+        return item.split('=').length > 1 ? item.split('=').sublist(1).join('=').trim() : item;
+      }
+    }
+    return '';
+  }
+
   Future<void> _pullConfig() async {
     final oid = shop.order?.id;
     final st = shop.order?.status;
-    final have = (shop.config?.devices.isNotEmpty ?? false) &&
-        (shop.config!.devices.first.conf.isNotEmpty);
-    if (have) return;
-    if (st != 'fulfilled' && shop.order?.ready != true) return;
+    if (shop.order?.ready != true && st != 'fulfilled') return;
+    if (!hasPaidAccess) return;
     final cfg = await api.fetchConfig(oid: oid);
-    if (cfg != null && cfg.devices.isNotEmpty) {
-      shop = shop.copyWith(config: cfg);
+    if (cfg == null || cfg.devices.isEmpty) return;
+    final next = cfg.devices.first.conf.trim();
+    if (next.isEmpty) return;
+    final prev = _confFor()?.trim() ?? '';
+    shop = shop.copyWith(config: cfg);
+    if (prev == next) return;
+    await _rememberConf(next, oid);
+    final moved = prev.isNotEmpty && _endpointOf(prev) != _endpointOf(next);
+    if (!moved || _switching || _userOff) return;
+    _switching = true;
+    try {
+      if (await vpn.isUp() || vpnOn) {
+        connecting = true;
+        notifyListeners();
+        try {
+          await vpn.disconnect();
+        } catch (_) {}
+        await vpn.connect(_tun(next));
+        _api?.refreshTransport();
+        connecting = false;
+        vpnOn = true;
+        message = l10n.vpnEnabled;
+      }
+    } catch (e) {
+      connecting = false;
+      error = _err(e);
+    } finally {
+      _switching = false;
     }
   }
 
@@ -694,6 +824,10 @@ class ShopController extends ChangeNotifier {
 
   Future<bool> maybeAutoConnect() async {
     vpnOn = await vpn.isUp();
+    if (_knownExpired) {
+      await _cutExpiredVpn();
+      return false;
+    }
     if (vpnOn) {
       connecting = false;
       error = null;
@@ -702,10 +836,10 @@ class ShopController extends ChangeNotifier {
     }
     final conf = _bestConf();
     final oid = shop.order?.id;
-    final paid = shop.order?.ready == true || shop.order?.status == 'fulfilled';
+    final paid = hasPaidAccess;
     if (conf == null || conf.isEmpty) return false;
     if (_userOff && oid != null && oid == _armedOid) return false;
-    if (!paid && conf != _savedConf) return false;
+    if (!paid) return false;
     connecting = true;
     message = l10n.paidConnecting;
     notifyListeners();
@@ -768,6 +902,9 @@ class ShopController extends ChangeNotifier {
         case 'waiting_review':
         case 'paid':
           this.screen = 'order';
+        case 'expired':
+        case 'disabled':
+          this.screen = 'home';
         default:
           break;
       }
@@ -795,15 +932,17 @@ class ShopController extends ChangeNotifier {
     super.dispose();
   }
 
-  String _err(Object e) {
-    final raw = e.toString();
-    if (raw.contains('SocketException') ||
-        raw.contains('ClientException') ||
-        raw.contains('HandshakeException') ||
-        raw.contains('Failed host lookup') ||
-        raw.contains('10057')) {
-      return 'Нет связи с сервером. Проверьте интернет и нажмите «Обновить».';
-    }
-    return raw.replaceFirst('Exception: ', '');
+  String _tun(String conf) {
+    return applyTunnelOptions(
+      conf,
+      netShield: netShield,
+      accelerator: vpnAccelerator,
+      excludedApps: excludedApps,
+      shopIp: shopIpv4FromUrl(ShopConfig.shopUrl),
+    );
   }
+
+  String friendlyError(Object e) => _err(e);
+
+  String _err(Object e) => friendlyNetError(e, english: l10n.en);
 }
