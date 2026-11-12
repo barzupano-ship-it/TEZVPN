@@ -35,13 +35,16 @@ workflows:
         script: keychain initialize
       - name: Fetch signing files
         script: |
-          openssl genrsa -out /tmp/asc_cert_key.pem 2048
+          if [ -z "$CERTIFICATE_PRIVATE_KEY" ]; then
+            echo "Set CERTIFICATE_PRIVATE_KEY in Codemagic environment variables"
+            exit 1
+          fi
           app-store-connect fetch-signing-files "ru.tezvpn.app" \
-            --type IOS_APP_STORE --create \
-            --certificate-key=@file:/tmp/asc_cert_key.pem
+            --type IOS_APP_STORE --create --strict-match-identifier \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
           app-store-connect fetch-signing-files "ru.tezvpn.app.tunnel" \
-            --type IOS_APP_STORE --create \
-            --certificate-key=@file:/tmp/asc_cert_key.pem
+            --type IOS_APP_STORE --create --strict-match-identifier \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
       - name: Set up signing certificate
         script: keychain add-certificates
       - name: Flutter packages
