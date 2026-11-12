@@ -41,12 +41,19 @@ workflows:
             echo "Set CERTIFICATE_PRIVATE_KEY in Codemagic environment variables"
             exit 1
           fi
+          KEY=/tmp/asc_cert_key.pem
+          if printf '%s' "$CERTIFICATE_PRIVATE_KEY" | grep -q "BEGIN"; then
+            printf '%s\n' "$CERTIFICATE_PRIVATE_KEY" > "$KEY"
+          else
+            printf '%s' "$CERTIFICATE_PRIVATE_KEY" | tr -d ' \r\n' | base64 --decode > "$KEY"
+          fi
+          openssl rsa -in "$KEY" -check -noout
           app-store-connect fetch-signing-files "ru.tezvpn.app" \
             --type IOS_APP_STORE --create --strict-match-identifier \
-            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
+            --certificate-key=@file:$KEY
           app-store-connect fetch-signing-files "ru.tezvpn.app.tunnel" \
             --type IOS_APP_STORE --create --strict-match-identifier \
-            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
+            --certificate-key=@file:$KEY
       - name: Set up signing certificate
         script: keychain add-certificates
       - name: Flutter packages
