@@ -55,6 +55,10 @@ workflows:
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" 2>/dev/null || true
           security find-identity -v -p codesigning
           xcode-project use-profiles --verbose --project ios/Runner.xcodeproj
+          test -f /Users/builder/export_options.plist || {
+            echo "use-profiles did not write export_options.plist"
+            exit 1
+          }
       - name: iOS IPA
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
     artifacts:

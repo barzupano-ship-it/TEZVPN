@@ -221,6 +221,7 @@
 			dependencies = (
 				E7A100000000000000000027 /* PBXTargetDependency */,
 			);
+			name = Runner;
 			packageProductDependencies = (
 				78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */,
 			);
