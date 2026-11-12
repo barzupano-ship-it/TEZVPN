@@ -49,7 +49,12 @@ workflows:
       - name: Build AmneziaWG
         script: bash ios/scripts/prepare_amneziawg.sh
       - name: Apply provisioning profiles
-        script: xcode-project use-profiles
+        script: |
+          echo "Profiles:"
+          ls -la "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" 2>/dev/null || true
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" 2>/dev/null || true
+          security find-identity -v -p codesigning
+          xcode-project use-profiles --verbose --project ios/Runner.xcodeproj
       - name: iOS IPA
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
     artifacts:
