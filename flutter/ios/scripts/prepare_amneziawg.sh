@@ -56,10 +56,8 @@ for goal in build version-header; do
 done
 test -s "$WG/out/libwg-go.a"
 
-PLATFORMS="$(cd "$WG/out" && rm -rf .check && mkdir .check && cd .check \
-  && ar -x ../libwg-go.a && for o in *.o; do otool -l "$o"; done \
-  | awk '/LC_BUILD_VERSION/{f=1} f&&/platform/{print $2; f=0}' | sort -u)"
-cd "$WG/out" && rm -rf .check
+PLATFORMS="$(otool -arch arm64 -l "$WG/out/libwg-go.a" \
+  | awk '/LC_BUILD_VERSION/{f=1} f&&$1=="platform"{print $2; f=0}' | sort -u)"
 echo "libwg-go.a platforms: $PLATFORMS"
 if printf '%s\n' "$PLATFORMS" | grep -Eqx '1|MACOS|macos'; then
   echo "libwg-go.a contains macOS objects"
