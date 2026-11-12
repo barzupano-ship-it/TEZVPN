@@ -26,8 +26,6 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Нужно загрузить фото чека оплаты</string>
 	<key>UIApplicationSceneManifest</key>
