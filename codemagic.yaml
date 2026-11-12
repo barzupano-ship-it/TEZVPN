@@ -16,8 +16,8 @@ workflows:
           flutter build appbundle --release
           flutter build apk --release
     artifacts:
-      - flutter/build/app/outputs/bundle/release/*.aab
-      - flutter/build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/flutter-apk/*.apk
 
   tezv-ios:
     name: TEZVPN iOS
@@ -72,9 +72,13 @@ workflows:
             exit 1
           }
       - name: iOS IPA
-        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+        script: |
+          flutter build ipa --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist
+          ls -la build/ios/ipa
     artifacts:
-      - flutter/build/ios/ipa/*.ipa
+      - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
         auth: integration
