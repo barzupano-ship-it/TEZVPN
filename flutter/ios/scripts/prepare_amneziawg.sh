@@ -36,16 +36,33 @@ if ! command -v go >/dev/null 2>&1; then
   brew install go
 fi
 
+IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+IOS_MIN="15.0"
+IOS_CC="$(xcrun --sdk iphoneos --find clang)"
+
 rm -rf "$WG/out" "$WG/.tmp"
-make -C "$WG" \
-  PLATFORM_NAME=iphoneos \
-  ARCHS=arm64 \
-  CONFIGURATION_BUILD_DIR="$WG/out" \
-  CONFIGURATION_TEMP_DIR="$WG/.tmp"
-make -C "$WG" version-header \
-  PLATFORM_NAME=iphoneos \
-  ARCHS=arm64 \
-  CONFIGURATION_BUILD_DIR="$WG/out" \
-  CONFIGURATION_TEMP_DIR="$WG/.tmp"
+for goal in build version-header; do
+  env -u SDKROOT -u MACOSX_DEPLOYMENT_TARGET \
+    IPHONEOS_DEPLOYMENT_TARGET="$IOS_MIN" \
+    make -C "$WG" "$goal" \
+      PLATFORM_NAME=iphoneos \
+      ARCHS=arm64 \
+      SDKROOT="$IOS_SDK" \
+      CC="$IOS_CC" \
+      DEPLOYMENT_TARGET_CLANG_FLAG_NAME=miphoneos-version-min \
+      DEPLOYMENT_TARGET_CLANG_ENV_NAME=IPHONEOS_DEPLOYMENT_TARGET \
+      CONFIGURATION_BUILD_DIR="$WG/out" \
+      CONFIGURATION_TEMP_DIR="$WG/.tmp"
+done
 test -s "$WG/out/libwg-go.a"
+
+PLATFORMS="$(cd "$WG/out" && rm -rf .check && mkdir .check && cd .check \
+  && ar -x ../libwg-go.a && for o in *.o; do otool -l "$o"; done \
+  | awk '/LC_BUILD_VERSION/{f=1} f&&/platform/{print $2; f=0}' | sort -u)"
+cd "$WG/out" && rm -rf .check
+echo "libwg-go.a platforms: $PLATFORMS"
+if printf '%s\n' "$PLATFORMS" | grep -Eqx '1|MACOS|macos'; then
+  echo "libwg-go.a contains macOS objects"
+  exit 1
+fi
 echo "AmneziaWG library ready"
