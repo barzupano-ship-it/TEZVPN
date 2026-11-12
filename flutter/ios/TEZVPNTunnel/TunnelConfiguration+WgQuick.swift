@@ -64,8 +64,8 @@ extension TunnelConfiguration {
                 if let e = attr(block, "Endpoint") {
                     peer.endpoint = Endpoint(from: e)
                 }
-                if let k = attr(block, "PersistentKeepalive"), let n = UInt16(k) {
-                    peer.persistentKeepAlive = n
+                if let k = attr(block, "PersistentKeepalive"), !k.isEmpty {
+                    peer.persistentKeepAlive = k
                 }
                 return peer
             }
