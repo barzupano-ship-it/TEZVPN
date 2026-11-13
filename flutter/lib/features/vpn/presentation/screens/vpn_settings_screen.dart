@@ -45,6 +45,12 @@ class VpnSettingsScreen extends StatelessWidget {
               title: t.logout,
               onTap: shop.logout,
             ),
+          if (!account.guest && t.apple)
+            VpnSettingsTile(
+              icon: const SettingsIcon(icon: Icons.delete_forever_rounded, color: Color(0xFFC62828)),
+              title: t.deleteAccount,
+              onTap: () => _confirmDelete(context),
+            ),
           const SizedBox(height: 10),
           _SectionLabel(t.settingsFeatures),
           VpnSettingsTile(
@@ -80,6 +86,26 @@ class VpnSettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final t = shop.l10n;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.deleteAccount),
+        content: Text(t.deleteAccountBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(t.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFC62828)),
+            child: Text(t.deleteAccountYes),
+          ),
+        ],
+      ),
+    );
+    if (yes == true) await shop.deleteAccount();
   }
 }
 

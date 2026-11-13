@@ -289,6 +289,17 @@ class ShopApi {
     return '${obj['status'] ?? ''}';
   }
 
+  /// App Store build: asks the administrator for access without a receipt.
+  Future<ShopState> requestAccess() async {
+    await _request('/api/request', method: 'POST', jsonBody: {});
+    return state();
+  }
+
+  Future<void> deleteAccount() async {
+    await _request('/api/account/delete', method: 'POST', jsonBody: {});
+    await _prefs.remove('cookie_value');
+  }
+
   Future<ShopState> uploadReceipt(List<int> bytes, String filename) async {
     final uri = Uri.parse('${ShopConfig.shopUrl}/api/receipt');
     final req = http.MultipartRequest('POST', uri);

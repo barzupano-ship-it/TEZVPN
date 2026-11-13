@@ -6,6 +6,7 @@ import '../config.dart';
 import '../features/authentication/presentation/screens/legal_placeholder_screen.dart';
 import '../features/authentication/presentation/screens/welcome_screen.dart';
 import '../features/vpn/application/vpn_home_controller.dart';
+import '../features/vpn/presentation/screens/apple_access_screen.dart';
 import '../features/vpn/presentation/screens/servers_screen.dart';
 import '../features/vpn/presentation/screens/subscription_screen.dart';
 import '../features/vpn/presentation/screens/vpn_home_screen.dart';
@@ -129,6 +130,9 @@ class _TezHomeState extends State<TezHome> with WidgetsBindingObserver {
   }
 
   Widget _body(ShopController ui) {
+    if (ShopConfig.appleStore && _shopScreen(ui.screen)) {
+      return AppleAccessScreen(shop: ui);
+    }
     switch (ui.screen) {
       case 'servers':
         return ServersScreen(shop: ui);
@@ -154,6 +158,17 @@ class _TezHomeState extends State<TezHome> with WidgetsBindingObserver {
       default:
         return _Plans(ui: ui);
     }
+  }
+}
+
+bool _shopScreen(String screen) {
+  switch (screen) {
+    case 'home':
+    case 'order':
+    case 'pay':
+      return true;
+    default:
+      return !_settingsScreen(screen) && screen != 'servers' && screen != 'account';
   }
 }
 

@@ -4,13 +4,43 @@ class L10n {
   L10n(this.code);
   final String code;
   bool get en => code == 'en';
+  bool get apple => ShopConfig.appleStore;
   String pick(String ru, String en) => this.en ? en : ru;
 
-  String get appTitle => ShopConfig.appName;
-  String get tagline => pick(
-        'VPN включается в этом приложении сразу после оплаты',
-        'VPN turns on in this app right after payment',
+  String get accessTitle => pick('Доступ к VPN', 'VPN access');
+  String get accessNone => pick(
+        'У вашего аккаунта пока нет доступа к VPN. Отправьте запрос — администратор свяжется с вами и откроет доступ.',
+        'Your account does not have VPN access yet. Send a request and the administrator will contact you and open access.',
       );
+  String get accessRequest => pick('Отправить запрос', 'Send request');
+  String get accessRequested => pick(
+        'Запрос отправлен. Администратор свяжется с вами, после подтверждения VPN включится сам.',
+        'Request sent. The administrator will contact you; VPN turns on by itself after confirmation.',
+      );
+  String accessActive(String until) => until.isEmpty
+      ? pick('Доступ открыт.', 'Access is active.')
+      : pick('Доступ открыт до $until.', 'Access is active until $until.');
+  String get accessRejected => pick(
+        'Запрос отклонён. Можно отправить новый запрос или написать в поддержку.',
+        'The request was declined. You can send a new request or contact support.',
+      );
+  String get accessSignIn => pick('Чтобы отправить запрос, войдите в аккаунт.', 'Sign in to send a request.');
+  String get deleteAccount => pick('Удалить аккаунт', 'Delete account');
+  String get deleteAccountBody => pick(
+        'Аккаунт, доступ к VPN, сообщения в поддержку и все данные будут удалены без возможности восстановления.',
+        'Your account, VPN access, support messages and all data will be permanently deleted.',
+      );
+  String get deleteAccountYes => pick('Удалить', 'Delete');
+  String get cancel => pick('Отмена', 'Cancel');
+  String get accountDeleted => pick('Аккаунт удалён.', 'Account deleted.');
+
+  String get appTitle => ShopConfig.appName;
+  String get tagline => apple
+      ? pick('Быстрый и защищённый VPN', 'Fast and secure VPN')
+      : pick(
+          'VPN включается в этом приложении сразу после оплаты',
+          'VPN turns on in this app right after payment',
+        );
   String get tabVpn => 'VPN';
   String get tabPlans => pick('Тарифы', 'Plans');
   String get tabPay => pick('Оплата', 'Pay');
@@ -21,11 +51,15 @@ class L10n {
         'Internet is going through ${ShopConfig.appName}',
       );
   String get confReady => pick('Конфиг готов — нажмите, чтобы включить', 'Config is ready — tap to connect');
-  String get waitingReview => pick('Чек на проверке. VPN включится сам.', 'Receipt is under review. VPN will turn on by itself.');
-  String get buyFirst => pick(
-        'Купите тариф — VPN подключится сразу после оплаты',
-        'Buy a plan — VPN connects right after payment',
-      );
+  String get waitingReview => apple
+      ? accessRequested
+      : pick('Чек на проверке. VPN включится сам.', 'Receipt is under review. VPN will turn on by itself.');
+  String get buyFirst => apple
+      ? accessNone
+      : pick(
+          'Купите тариф — VPN подключится сразу после оплаты',
+          'Buy a plan — VPN connects right after payment',
+        );
   String get on => pick('ВКЛ', 'ON');
   String get turnOn => pick('ВКЛЮЧИТЬ', 'CONNECT');
   String get buy => pick('КУПИТЬ', 'BUY');
@@ -52,12 +86,19 @@ class L10n {
   String get refreshStatus => pick('Обновить статус', 'Refresh status');
   String get readyVpn => pick('Готово. Можно включать VPN.', 'Ready. You can turn VPN on.');
   String get openVpn => pick('Открыть VPN', 'Open VPN');
-  String get rejected => pick('Чек отклонён. Выберите тариф заново.', 'Receipt declined. Choose a plan again.');
+  String get rejected => apple
+      ? accessRejected
+      : pick('Чек отклонён. Выберите тариф заново.', 'Receipt declined. Choose a plan again.');
   String get disabled => pick('Доступ отключён администратором.', 'Access was disabled by the admin.');
-  String get subscriptionExpired => pick(
-        'Срок подписки закончился. Купите тариф, чтобы снова включить VPN.',
-        'Your subscription has ended. Buy a plan to turn VPN on again.',
-      );
+  String get subscriptionExpired => apple
+      ? pick(
+          'Срок доступа закончился. Отправьте запрос, чтобы снова включить VPN.',
+          'Your access has ended. Send a request to turn VPN on again.',
+        )
+      : pick(
+          'Срок подписки закончился. Купите тариф, чтобы снова включить VPN.',
+          'Your subscription has ended. Buy a plan to turn VPN on again.',
+        );
   String get pay => pick('Оплата', 'Payment');
   String get payee => pick('Получатель', 'Payee');
   String get loadingPay => pick('Реквизиты загружаются…', 'Loading payment details…');
@@ -109,17 +150,23 @@ class L10n {
       );
   String get loggedIn => pick('Вход выполнен', 'Signed in');
   String get vpnOff => pick('VPN выключен', 'VPN is off');
-  String get buyPlanFirst => pick('Сначала купите тариф', 'Buy a plan first');
+  String get buyPlanFirst => apple
+      ? pick('Сначала нужен доступ к VPN', 'VPN access is needed first')
+      : pick('Сначала купите тариф', 'Buy a plan first');
   String get allowVpn => pick(
         'Разрешите VPN в системе, затем нажмите ещё раз.',
         'Allow VPN in the system, then tap again.',
       );
   String get vpnEnabled => pick('VPN включён', 'VPN is on');
-  String get paidConnecting => pick('Оплата принята. Подключаем VPN…', 'Payment accepted. Connecting VPN…');
-  String get paidTap => pick(
-        'Оплата принята. Нажмите кнопку и разрешите VPN.',
-        'Payment accepted. Tap the button and allow VPN.',
-      );
+  String get paidConnecting => apple
+      ? pick('Доступ открыт. Подключаем VPN…', 'Access is open. Connecting VPN…')
+      : pick('Оплата принята. Подключаем VPN…', 'Payment accepted. Connecting VPN…');
+  String get paidTap => apple
+      ? pick('Доступ открыт. Нажмите кнопку и разрешите VPN.', 'Access is open. Tap the button and allow VPN.')
+      : pick(
+          'Оплата принята. Нажмите кнопку и разрешите VPN.',
+          'Payment accepted. Tap the button and allow VPN.',
+        );
 
   String get notConnected => pick('Нет подключения', 'Not Connected');
   String get connectedLabel => pick('Подключено', 'Connected');
@@ -195,10 +242,12 @@ class L10n {
   String get settingsPrivacy => pick('Конфиденциальность', 'Privacy');
   String get settingsPhone => pick('Телефон', 'Phone');
   String get logout => pick('Выйти', 'Log out');
-  String get proRequired => pick(
-        'Нужен тариф Premium или VIP.',
-        'This feature requires a Premium or VIP subscription.',
-      );
+  String get proRequired => apple
+      ? pick('Эта функция недоступна для вашего доступа.', 'This feature is not included in your access.')
+      : pick(
+          'Нужен тариф Premium или VIP.',
+          'This feature requires a Premium or VIP subscription.',
+        );
   String get registerButton => pick('Регистрация', 'Register');
   String get loginButton => pick('Вход', 'Sign in');
   String get registerBlurb => pick(
@@ -239,11 +288,21 @@ class L10n {
         'AmneziaWG is the only protocol in this VPN engine.',
       );
   String get privacyDraft => privacyPolicy;
-  String get privacyPolicy => pick(
+  String get privacyPolicy => apple
+      ? pick(
+          'SULTAN VPN обрабатывает данные, нужные для аккаунта и VPN: почту или телефон, статус доступа, слоты устройств и сообщения в поддержку. VPN не записывает трафик, посещённые сайты и DNS-запросы. Мы не продаём эти данные и не используем их для рекламы. Аккаунт и все данные можно удалить в настройках. Трафик в туннеле шифруется протоколом AmneziaWG.',
+          'SULTAN VPN processes data needed for the account and VPN: email or phone, access status, device slots and support messages. The VPN does not log traffic, visited sites or DNS queries. We do not sell this data or use it for ads. You can delete your account and all data in Settings. Tunnel traffic is encrypted with AmneziaWG.',
+        )
+      : pick(
         'SULTAN VPN обрабатывает данные, нужные для кабинета и VPN: логин, статус подписки, слоты устройств, сообщения в поддержку и фото чека, если вы его загружаете. Конфиг VPN выдаётся только после оплаты. Мы не продаём эти данные и не используем их для рекламы. Трафик в туннеле шифруется протоколом AmneziaWG. Вопросы: Telegram поддержки в приложении.',
         'SULTAN VPN processes data needed for the account and VPN: login, subscription status, device slots, support messages, and a receipt photo if you upload one. A VPN config is issued only after payment. We do not sell this data or use it for ads. Tunnel traffic is encrypted with AmneziaWG. Contact: in-app Telegram support.',
       );
-  String get termsOfUse => pick(
+  String get termsOfUse => apple
+      ? pick(
+          'SULTAN VPN работает, пока у аккаунта открыт доступ. После окончания срока туннель отключается. Сервис не обещает обход любых блокировок и не несёт ответственность за использование сети в нарушение закона вашей страны.',
+          'SULTAN VPN works while the account has active access. When access ends, the tunnel stops. The service does not promise to bypass every block and is not responsible for unlawful use.',
+        )
+      : pick(
         'SULTAN VPN — платный сервис. VPN работает, пока активна оплаченная подписка. После окончания срока туннель отключается до новой оплаты. Сервис не обещает обход любых блокировок и не несёт ответственность за использование сети в нарушение закона вашей страны. Оплата и возврат — по правилам магазина в приложении.',
         'SULTAN VPN is a paid service. VPN works while a paid subscription is active. When it expires the tunnel stops until you pay again. The service does not promise to bypass every block and is not responsible for unlawful use. Payment and refunds follow the in-app shop rules.',
       );

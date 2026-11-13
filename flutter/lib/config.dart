@@ -1,8 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class ShopConfig {
+  /// App Store build (iPhone, iPad and the same binary on Apple silicon Macs):
+  /// no prices, payment details or receipts, per App Review guideline 3.1.1.
+  static bool get appleStore => !kIsWeb && Platform.isIOS;
+
   static String appName = 'SULTAN VPN';
   static String shopUrl = 'https://188-116-24-47.sslip.io';
   static String support = 'BarzuRizoev';

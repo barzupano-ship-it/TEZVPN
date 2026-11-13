@@ -223,6 +223,45 @@ class ShopController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> requestAccess() async {
+    if ((shop.account?.login ?? '').isEmpty) {
+      openRegistration(create: false);
+      error = l10n.accessSignIn;
+      notifyListeners();
+      return;
+    }
+    busy = true;
+    error = null;
+    message = null;
+    notifyListeners();
+    try {
+      shop = await api.requestAccess();
+      _apply(shop, busy: false, screen: 'home', message: l10n.accessRequested);
+      unawaited(_prepareVpn());
+    } catch (e) {
+      busy = false;
+      error = _err(e);
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteAccount() async {
+    busy = true;
+    error = null;
+    notifyListeners();
+    try {
+      await api.deleteAccount();
+    } catch (e) {
+      busy = false;
+      error = _err(e);
+      notifyListeners();
+      return;
+    }
+    await logout();
+    message = l10n.accountDeleted;
+    notifyListeners();
+  }
+
   String? _accountError(String login, String password, {String? again}) {
     if (!_loginRe.hasMatch(login)) return l10n.loginRules;
     if (password.length < 8) return l10n.passwordRules;

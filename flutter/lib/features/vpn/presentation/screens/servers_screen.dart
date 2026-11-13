@@ -29,10 +29,12 @@ class ServersScreen extends StatelessWidget {
         const SizedBox(height: 16),
         if (named.isEmpty)
           Text(
-            shop.l10n.pick(
-              'Сервер появится после оплаты тарифа.',
-              'A server appears after a plan is paid.',
-            ),
+            shop.l10n.apple
+                ? shop.l10n.pick('Сервер появится, когда откроется доступ.', 'A server appears once access is open.')
+                : shop.l10n.pick(
+                    'Сервер появится после оплаты тарифа.',
+                    'A server appears after a plan is paid.',
+                  ),
             style: const TextStyle(color: Color(0xFF1A1C1E)),
           )
         else
